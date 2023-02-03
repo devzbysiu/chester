@@ -1,7 +1,11 @@
-use log::debug;
+#![allow(clippy::module_name_repetitions)]
 
-fn main() {
-    pretty_env_logger::init();
-    debug!("Starting");
-    println!("Hello, world!");
-}
+mod configuration;
+mod data_providers;
+mod entities;
+mod use_cases;
+
+mod result;
+mod startup;
+
+fn main() {}

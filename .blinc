@@ -1,12 +1,12 @@
-[[tasks]]
+[[task]]
 cmd = "cargo"
 args = ["check"]
 
-[[tasks]]
+[[task]]
 cmd = "cargo"
 args = ["clippy", "--all-targets", "--all-features", "--", "-W", "clippy::pedantic", "-D", "warnings"]
 
-[[tasks]]
+[[task]]
 cmd = "cargo"
 args = ["test"]
 
