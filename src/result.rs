@@ -1,6 +1,12 @@
 use thiserror::Error;
 
 #[derive(Debug, Error)]
+pub enum WatcherErr {
+    #[error("Error when using bus.")]
+    Bus(#[from] BusErr),
+}
+
+#[derive(Debug, Error)]
 pub enum BusErr {
     #[error("Failed to create Eventador instance")]
     Generic(#[from] anyhow::Error),

@@ -1,3 +1,5 @@
+use crate::result::WatcherErr;
+use crate::use_cases::change_watcher::Change;
 use crate::use_cases::change_watcher::{ChangeWatcher, Watcher};
 
 pub struct DefaultChangeWatcher;
@@ -9,7 +11,7 @@ impl DefaultChangeWatcher {
 }
 
 impl Watcher for DefaultChangeWatcher {
-    fn run(&self) {
+    fn next_change(&self) -> Result<Change, WatcherErr> {
         todo!()
     }
 }

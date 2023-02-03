@@ -22,4 +22,6 @@ pub trait Subscriber: Send {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum BusEvent {}
+pub enum BusEvent {
+    ChangeDetected,
+}
