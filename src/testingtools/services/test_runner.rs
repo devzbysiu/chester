@@ -1,6 +1,8 @@
-use crate::result::RunnerErr;
+use crate::result::{BusErr, RunnerErr};
 use crate::testingtools::{pipe, MutexExt, Spy, Tx};
 use crate::use_cases::test_runner::{Runner, TestRunner, TestsStatus};
+
+use anyhow::anyhow;
 
 pub fn tracked(runner: TestRunner) -> (TestRunnerSpy, TestRunner) {
     TrackedTestRunner::wrap(runner)
@@ -41,21 +43,23 @@ impl TestRunnerSpy {
     }
 }
 
-pub fn working() -> TestRunner {
-    WorkingTestRunner::make()
+pub fn working(result: TestsStatus) -> TestRunner {
+    WorkingTestRunner::make(result)
 }
 
-pub struct WorkingTestRunner;
+pub struct WorkingTestRunner {
+    result: TestsStatus,
+}
 
 impl WorkingTestRunner {
-    fn make() -> TestRunner {
-        Box::new(Self)
+    fn make(result: TestsStatus) -> TestRunner {
+        Box::new(Self { result })
     }
 }
 
 impl Runner for WorkingTestRunner {
     fn run(&self) -> Result<TestsStatus, RunnerErr> {
-        Ok(TestsStatus::Success)
+        Ok(self.result.clone())
     }
 }
 
@@ -73,6 +77,6 @@ impl FailingTestRunner {
 
 impl Runner for FailingTestRunner {
     fn run(&self) -> Result<TestsStatus, RunnerErr> {
-        Ok(TestsStatus::Failure)
+        Err(RunnerErr::Bus(BusErr::Generic(anyhow!("Failure"))))
     }
 }

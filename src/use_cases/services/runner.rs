@@ -53,7 +53,7 @@ mod test {
     fn tests_are_run_when_any_change_is_detected() -> Result<()> {
         // given
         init_tracing();
-        let (test_runner_spy, test_runner) = tracked(working());
+        let (test_runner_spy, test_runner) = tracked(working(TestsStatus::Success));
         let shim = create_test_shim()?;
         TestRunnerShell::new(shim.bus()).run(test_runner);
 
@@ -70,7 +70,7 @@ mod test {
     fn when_tests_pass_there_is_correct_event_on_the_bus() -> Result<()> {
         // given
         init_tracing();
-        let test_runner = working();
+        let test_runner = working(TestsStatus::Success);
         let shim = create_test_shim()?;
         TestRunnerShell::new(shim.bus()).run(test_runner);
 
@@ -86,6 +86,24 @@ mod test {
 
     #[test]
     fn when_tests_fail_there_is_correct_event_on_the_bus() -> Result<()> {
+        // given
+        init_tracing();
+        let test_runner = working(TestsStatus::Failure);
+        let shim = create_test_shim()?;
+        TestRunnerShell::new(shim.bus()).run(test_runner);
+
+        // when
+        shim.simulate_change()?;
+        shim.ignore_event()?; // ignore BusEvent::ChangeDetected
+
+        // then
+        assert!(shim.event_on_bus(&BusEvent::TestsFailed)?);
+
+        Ok(())
+    }
+
+    #[test]
+    fn when_test_runner_fails_correct_event_is_sent() -> Result<()> {
         // given
         init_tracing();
         let test_runner = failing();
