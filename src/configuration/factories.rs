@@ -32,7 +32,7 @@ impl Context {
     }
 }
 
-fn event_bus() -> Result<EventBus, BusErr> {
+pub fn event_bus() -> Result<EventBus, BusErr> {
     Ok(Arc::new(LocalBus::new()?))
 }
 

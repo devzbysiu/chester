@@ -1,9 +1,10 @@
-use std::fmt::Debug;
-
 use crate::result::BusErr;
 use crate::use_cases::bus::{
     Bus, BusEvent, EventPublisher, EventSubscriber, Publisher, Subscriber,
 };
+
+use std::fmt::Debug;
+use std::sync::{Arc, Mutex};
 
 const BUS_CAPACITY: u64 = 1024; // TODO: take care of this `capacity`
 
@@ -27,11 +28,11 @@ impl Debug for LocalBus {
 
 impl Bus for LocalBus {
     fn subscriber(&self) -> EventSubscriber {
-        Box::new(LocalSubscriber::new(self.eventador.subscribe()))
+        Arc::new(LocalSubscriber::new(self.eventador.subscribe()))
     }
 
     fn publisher(&self) -> EventPublisher {
-        Box::new(LocalPublisher::new(self.eventador.publisher()))
+        Arc::new(LocalPublisher::new(self.eventador.publisher()))
     }
 }
 
@@ -52,18 +53,20 @@ impl Subscriber for LocalSubscriber {
 }
 
 pub struct LocalPublisher {
-    publ: eventador::Publisher,
+    publ: Arc<Mutex<eventador::Publisher>>,
 }
 
 impl LocalPublisher {
     fn new(publ: eventador::Publisher) -> Self {
+        let publ = Arc::new(Mutex::new(publ));
         Self { publ }
     }
 }
 
 impl Publisher for LocalPublisher {
-    fn send(&mut self, event: BusEvent) -> Result<(), BusErr> {
-        self.publ.send(event);
+    fn send(&self, event: BusEvent) -> Result<(), BusErr> {
+        let mut publ = self.publ.lock().expect("poisoned mutex");
+        publ.send(event);
         Ok(())
     }
 }

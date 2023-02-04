@@ -4,8 +4,8 @@ use std::fmt::Debug;
 use std::sync::Arc;
 
 pub type EventBus = Arc<dyn Bus>;
-pub type EventSubscriber = Box<dyn Subscriber>;
-pub type EventPublisher = Box<dyn Publisher>;
+pub type EventSubscriber = Arc<dyn Subscriber>;
+pub type EventPublisher = Arc<dyn Publisher>;
 
 pub trait Bus: Send + Sync + Debug {
     fn publisher(&self) -> EventPublisher;
@@ -14,10 +14,10 @@ pub trait Bus: Send + Sync + Debug {
 }
 
 pub trait Publisher: Send {
-    fn send(&mut self, event: BusEvent) -> Result<(), BusErr>;
+    fn send(&self, event: BusEvent) -> Result<(), BusErr>;
 }
 
-pub trait Subscriber: Send {
+pub trait Subscriber: Sync + Send {
     fn recv(&self) -> Result<BusEvent, BusErr>;
 }
 

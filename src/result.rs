@@ -4,6 +4,9 @@ use thiserror::Error;
 pub enum WatcherErr {
     #[error("Error when using bus.")]
     Bus(#[from] BusErr),
+
+    #[error("Failed to receive event from watcher.")]
+    Receive(#[from] std::sync::mpsc::RecvError),
 }
 
 #[derive(Debug, Error)]
