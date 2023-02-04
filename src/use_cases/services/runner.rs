@@ -17,7 +17,6 @@ impl TestRunnerShell {
         Self { bus }
     }
 
-    #[allow(clippy::unused_self)]
     pub fn run(self, test_runner: TestRunner) {
         let sub = self.bus.subscriber();
         let publ = self.bus.publisher();

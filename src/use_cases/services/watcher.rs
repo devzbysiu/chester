@@ -20,7 +20,6 @@ impl ChangeWatcherShell {
         Self { bus }
     }
 
-    #[allow(clippy::unused_self)]
     pub fn run(self, change_watcher: ChangeWatcher) {
         thread::spawn(move || -> Result<()> {
             loop {
