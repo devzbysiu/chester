@@ -70,4 +70,9 @@ impl TestShim {
             Err(TryRecvError::Disconnected) => unreachable!(),
         }
     }
+
+    pub fn ignore_event(&self) -> Result<()> {
+        let _event = self.sub.recv()?; // ignore message sent earliner
+        Ok(())
+    }
 }

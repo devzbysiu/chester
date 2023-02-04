@@ -55,7 +55,24 @@ impl WorkingTestRunner {
 
 impl Runner for WorkingTestRunner {
     fn run(&self) -> Result<TestsStatus, RunnerErr> {
-        // nothing to do
         Ok(TestsStatus::Success)
+    }
+}
+
+pub fn failing() -> TestRunner {
+    FailingTestRunner::make()
+}
+
+pub struct FailingTestRunner;
+
+impl FailingTestRunner {
+    fn make() -> TestRunner {
+        Box::new(Self)
+    }
+}
+
+impl Runner for FailingTestRunner {
+    fn run(&self) -> Result<TestsStatus, RunnerErr> {
+        Ok(TestsStatus::Failure)
     }
 }

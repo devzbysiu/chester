@@ -3,7 +3,7 @@ use crate::use_cases::bus::{BusEvent, EventBus};
 use crate::use_cases::test_runner::{TestRunner, TestsStatus};
 
 use std::thread;
-use tracing::trace;
+use tracing::{debug, trace};
 
 type Result<T> = std::result::Result<T, RunnerErr>;
 
@@ -25,8 +25,10 @@ impl TestRunnerShell {
             loop {
                 if let Ok(BusEvent::ChangeDetected) = sub.recv() {
                     if let Ok(TestsStatus::Success) = test_runner.run() {
+                        debug!("tests passed");
                         publ.send(BusEvent::TestsPassed)?;
                     } else {
+                        debug!("tests failed");
                         publ.send(BusEvent::TestsFailed)?;
                     }
                 } else {
@@ -42,7 +44,7 @@ mod test {
     use super::*;
 
     use crate::configuration::tracing::init_tracing;
-    use crate::testingtools::services::test_runner::{tracked, working};
+    use crate::testingtools::services::test_runner::{failing, tracked, working};
     use crate::testingtools::unit::create_test_shim;
 
     use anyhow::Result;
@@ -60,6 +62,42 @@ mod test {
 
         // then
         assert!(test_runner_spy.run_called());
+
+        Ok(())
+    }
+
+    #[test]
+    fn when_tests_pass_there_is_correct_event_on_the_bus() -> Result<()> {
+        // given
+        init_tracing();
+        let test_runner = working();
+        let shim = create_test_shim()?;
+        TestRunnerShell::new(shim.bus()).run(test_runner);
+
+        // when
+        shim.simulate_change()?;
+        shim.ignore_event()?; // ignore BusEvent::ChangeDetected
+
+        // then
+        assert!(shim.event_on_bus(&BusEvent::TestsPassed)?);
+
+        Ok(())
+    }
+
+    #[test]
+    fn when_tests_fail_there_is_correct_event_on_the_bus() -> Result<()> {
+        // given
+        init_tracing();
+        let test_runner = failing();
+        let shim = create_test_shim()?;
+        TestRunnerShell::new(shim.bus()).run(test_runner);
+
+        // when
+        shim.simulate_change()?;
+        shim.ignore_event()?; // ignore BusEvent::ChangeDetected
+
+        // then
+        assert!(shim.event_on_bus(&BusEvent::TestsFailed)?);
 
         Ok(())
     }
