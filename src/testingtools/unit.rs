@@ -1,5 +1,5 @@
 use crate::configuration::factories::event_bus;
-use crate::use_cases::bus::{BusEvent, EventBus, EventSubscriber};
+use crate::use_cases::bus::{BusEvent, EventBus, EventPublisher, EventSubscriber};
 use crate::use_cases::change_watcher::Change;
 
 use anyhow::Result;
@@ -12,7 +12,14 @@ pub fn create_test_shim() -> Result<TestShim> {
     let rx = Some(rx);
     let bus = event_bus()?;
     let sub = bus.subscriber();
-    Ok(TestShim { rx, tx, bus, sub })
+    let publ = bus.publisher();
+    Ok(TestShim {
+        rx,
+        tx,
+        bus,
+        sub,
+        publ,
+    })
 }
 
 pub struct TestShim {
@@ -20,11 +27,17 @@ pub struct TestShim {
     tx: Sender<Change>,
     bus: EventBus,
     sub: EventSubscriber,
+    publ: EventPublisher,
 }
 
 impl TestShim {
     pub fn trigger_watcher(&self) -> Result<()> {
         self.tx.send(Change::Any)?;
+        Ok(())
+    }
+
+    pub fn simulate_change(&self) -> Result<()> {
+        self.publ.send(BusEvent::ChangeDetected)?;
         Ok(())
     }
 
@@ -44,14 +57,14 @@ impl TestShim {
             Ok(())
         });
 
-        thread::sleep(Duration::from_secs(5));
+        thread::sleep(Duration::from_millis(200));
 
         match rx.try_recv() {
             Ok(received) => Ok(*event == received),
             Err(TryRecvError::Empty) => {
                 drop(rx);
                 drop(t);
-                // receiving event took more than 5 seconds
+                // receiving event took more than 500 milliseconds
                 Ok(false)
             }
             Err(TryRecvError::Disconnected) => unreachable!(),

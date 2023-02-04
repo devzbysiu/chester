@@ -1,5 +1,13 @@
+use crate::result::RunnerErr;
+
 pub type TestRunner = Box<dyn Runner>;
 
-pub trait Runner {
-    fn run(&self);
+pub trait Runner: Send {
+    fn run(&self) -> Result<TestsStatus, RunnerErr>;
+}
+
+#[allow(unused)]
+pub enum TestsStatus {
+    Success,
+    Failure,
 }

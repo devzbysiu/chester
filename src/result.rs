@@ -10,6 +10,12 @@ pub enum WatcherErr {
 }
 
 #[derive(Debug, Error)]
+pub enum RunnerErr {
+    #[error("Error when using bus.")]
+    Bus(#[from] BusErr),
+}
+
+#[derive(Debug, Error)]
 pub enum BusErr {
     #[error("Failed to create Eventador instance")]
     Generic(#[from] anyhow::Error),

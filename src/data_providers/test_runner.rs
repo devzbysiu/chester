@@ -1,4 +1,5 @@
-use crate::use_cases::test_runner::{Runner, TestRunner};
+use crate::result::RunnerErr;
+use crate::use_cases::test_runner::{Runner, TestRunner, TestsStatus};
 
 pub struct DefaultTestRunner;
 
@@ -9,7 +10,7 @@ impl DefaultTestRunner {
 }
 
 impl Runner for DefaultTestRunner {
-    fn run(&self) {
+    fn run(&self) -> Result<TestsStatus, RunnerErr> {
         todo!()
     }
 }

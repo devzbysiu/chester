@@ -13,7 +13,7 @@ pub trait Bus: Send + Sync + Debug {
     fn subscriber(&self) -> EventSubscriber;
 }
 
-pub trait Publisher: Send {
+pub trait Publisher: Sync + Send {
     fn send(&self, event: BusEvent) -> Result<(), BusErr>;
 }
 
@@ -24,4 +24,6 @@ pub trait Subscriber: Sync + Send {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum BusEvent {
     ChangeDetected,
+    TestsPassed,
+    TestsFailed,
 }
