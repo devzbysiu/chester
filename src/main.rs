@@ -15,9 +15,10 @@ mod startup;
 #[cfg(test)]
 mod testingtools;
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     init_tracing();
-    start_server(None)?;
+    start_server(None).await?;
 
     Ok(())
 }

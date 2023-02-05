@@ -26,7 +26,7 @@ pub enum SinkErr {
 
 #[derive(Debug, Error)]
 pub enum BusErr {
-    #[error("Failed to create Eventador instance")]
+    #[error("Failed to create Eventador instance.")]
     Generic(#[from] anyhow::Error),
 }
 
@@ -35,8 +35,11 @@ pub enum SetupErr {
     #[error("Failed to create event bus.")]
     Bus(#[from] BusErr),
 
-    #[error("IO operation failed")]
+    #[error("IO operation failed.")]
     Io(#[from] std::io::Error),
+
+    #[error("Failed to setup server.")]
+    Hyper(#[from] hyper::Error),
 }
 
 #[derive(Debug, Error)]

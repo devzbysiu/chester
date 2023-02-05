@@ -5,10 +5,12 @@ use crate::use_cases::services::runner_shell::TestRunnerShell;
 use crate::use_cases::services::sink_shell::ResultsSinkShell;
 use crate::use_cases::services::watcher_shell::ChangeWatcherShell;
 
-use interprocess::os::unix::udsocket::{UdStream, UdStreamListener};
-use std::io::{self, prelude::*};
-use std::net::Shutdown;
-use tracing::error;
+use hyper::service::{make_service_fn, service_fn};
+use hyper::{Body, Response, Server};
+use hyperlocal::UnixServerExt;
+use std::fs;
+use std::path::PathBuf;
+use tracing::{debug, info};
 
 #[allow(unused)]
 #[allow(clippy::needless_pass_by_value)]
@@ -33,22 +35,23 @@ pub fn setup_shells(ctx: Context) -> RepoRead {
 }
 
 #[allow(clippy::needless_pass_by_value)]
-pub fn start_server(_repo_read: Option<RepoRead>) -> Result<(), SetupErr> {
-    let listener = UdStreamListener::bind("/tmp/example.sock")?;
-    for mut conn in listener.incoming().filter_map(handle_error) {
-        conn.write_all(r#"{"status": "success"}"#.as_bytes())?;
-        conn.shutdown(Shutdown::Write)?;
+pub async fn start_server(_repo_read: Option<RepoRead>) -> Result<(), SetupErr> {
+    let runtime_path = dirs::runtime_dir().unwrap_or(PathBuf::from("/run"));
+    let socket_path = runtime_path.join("chester.sock");
+
+    if socket_path.exists() {
+        debug!("socket file exists, removing");
+        fs::remove_file(&socket_path)?;
     }
+
+    let make_service = make_service_fn(|_| async {
+        Ok::<_, hyper::Error>(service_fn(|_| async {
+            Ok::<_, hyper::Error>(Response::new(Body::from(r#"{"status": "success"}"#)))
+        }))
+    });
+
+    info!("binding {socket_path:?}");
+    Server::bind_unix(socket_path)?.serve(make_service).await?;
 
     Ok(())
-}
-
-fn handle_error(result: io::Result<UdStream>) -> Option<UdStream> {
-    match result {
-        Ok(val) => Some(val),
-        Err(error) => {
-            error!("There was an error with an incoming connection: {error}");
-            None
-        }
-    }
 }

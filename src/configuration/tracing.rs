@@ -3,7 +3,6 @@ use tracing::subscriber::set_global_default;
 use tracing_forest::ForestLayer;
 use tracing_subscriber::{layer::SubscriberExt, EnvFilter, Registry};
 
-#[allow(unused)]
 static TRACING: Lazy<()> = Lazy::new(setup_global_subscriber);
 
 fn setup_global_subscriber() {
