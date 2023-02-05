@@ -17,8 +17,6 @@ impl ResultsSinkShell {
         Self { bus }
     }
 
-    #[allow(clippy::unused_self)]
-    #[allow(clippy::needless_pass_by_value)]
     pub fn run(&self, repo_write: RepoWrite) {
         let sub = self.bus.subscriber();
         thread::spawn(move || -> Result<()> {
