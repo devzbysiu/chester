@@ -60,4 +60,21 @@ mod test {
 
         Ok(())
     }
+
+    #[test]
+    fn failed_result_is_written_to_repo() -> Result<()> {
+        // given
+        let shim = create_test_shim()?;
+        let (repo_spy, repo) = tracked(&working());
+        ResultsSinkShell::new(shim.bus()).run(repo.write());
+
+        // when
+        shim.simulate_tests_failed()?;
+        shim.ignore_event()?;
+
+        // then
+        assert!(repo_spy.write_called_with_val(&Status::Failure));
+
+        Ok(())
+    }
 }
