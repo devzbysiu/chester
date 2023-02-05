@@ -16,6 +16,15 @@ pub enum RunnerErr {
 }
 
 #[derive(Debug, Error)]
+pub enum SinkErr {
+    #[error("Error when using bus.")]
+    Bus(#[from] BusErr),
+
+    #[error("Failed to write to repo.")]
+    Write(#[from] RepoWriteErr),
+}
+
+#[derive(Debug, Error)]
 pub enum BusErr {
     #[error("Failed to create Eventador instance")]
     Generic(#[from] anyhow::Error),

@@ -41,6 +41,11 @@ impl TestShim {
         Ok(())
     }
 
+    pub fn simulate_tests_succeeded(&self) -> Result<()> {
+        self.publ.send(BusEvent::TestsPassed)?;
+        Ok(())
+    }
+
     pub fn bus(&self) -> EventBus {
         self.bus.clone()
     }
