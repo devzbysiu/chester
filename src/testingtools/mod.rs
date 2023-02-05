@@ -11,15 +11,21 @@ where
     T: Eq,
 {
     let (tx, rx) = channel();
-    (Mutex::new(tx), Spy::new(rx))
+    (Tx::new(tx), Spy::new(rx))
 }
 
-pub type Tx<T = ()> = Mutex<Sender<T>>;
+pub struct Tx<T = ()> {
+    tx: Mutex<Sender<T>>,
+}
 
-pub struct Spy<T = ()>
-where
-    T: Eq,
-{
+impl<T> Tx<T> {
+    fn new(tx: Sender<T>) -> Self {
+        let tx = Mutex::new(tx);
+        Self { tx }
+    }
+}
+
+pub struct Spy<T = ()> {
     rx: Receiver<T>,
 }
 
@@ -49,7 +55,7 @@ pub trait MutexExt<T = ()> {
 
 impl<T> MutexExt<T> for Tx<T> {
     fn signal(&self, val: T) {
-        let tx = self.lock().expect("poisoned mutex");
+        let tx = self.tx.lock().expect("poisoned mutex");
         // NOTE: We can't `unwrap` or `expect` (etc.) here because during testing, the other end of
         // the channel gets dropped while this end is still used in thread. The result is that
         // `send` returns error and `unwrap` or `expect` panics which triigers abort and stop the
