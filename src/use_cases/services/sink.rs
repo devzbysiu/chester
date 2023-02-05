@@ -56,7 +56,7 @@ mod test {
         shim.ignore_event()?;
 
         // then
-        assert!(repo_spy.write_called());
+        assert!(repo_spy.write_called_with_val(&Status::Success));
 
         Ok(())
     }

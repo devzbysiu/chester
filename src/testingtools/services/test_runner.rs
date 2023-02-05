@@ -24,7 +24,7 @@ impl TrackedTestRunner {
 impl Runner for TrackedTestRunner {
     fn run(&self) -> Result<TestsStatus, RunnerErr> {
         let res = self.runner.run();
-        self.tx.signal();
+        self.tx.signal(());
         res
     }
 }

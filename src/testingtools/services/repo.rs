@@ -21,7 +21,7 @@ impl TrackedRepo {
     fn wrap(repo: &Repo) -> (RepoSpies, Repo) {
         let (read_status_tx, read_status_spy) = pipe();
 
-        let (write_status_tx, write_status_spy) = pipe();
+        let (write_status_tx, write_status_spy) = pipe::<Status>();
 
         (
             RepoSpies::new(read_status_spy, write_status_spy),
@@ -66,11 +66,11 @@ impl RepositoryRead for TrackedRepoRead {
 
 pub struct TrackedRepoWrite {
     write: RepoWrite,
-    write_status_tx: Tx,
+    write_status_tx: Tx<Status>,
 }
 
 impl TrackedRepoWrite {
-    fn create(write: RepoWrite, write_status_tx: Tx) -> RepoWrite {
+    fn create(write: RepoWrite, write_status_tx: Tx<Status>) -> RepoWrite {
         Arc::new(Self {
             write,
             write_status_tx,
@@ -80,8 +80,8 @@ impl TrackedRepoWrite {
 
 impl RepositoryWrite for TrackedRepoWrite {
     fn status(&self, status: Status) -> Result<(), RepoWriteErr> {
-        let res = self.write.status(status);
-        self.write_status_tx.signal();
+        let res = self.write.status(status.clone());
+        self.write_status_tx.signal(status);
         res
     }
 }
@@ -89,11 +89,11 @@ impl RepositoryWrite for TrackedRepoWrite {
 pub struct RepoSpies {
     #[allow(unused)]
     read_status_spy: Spy,
-    write_status_spy: Spy,
+    write_status_spy: Spy<Status>,
 }
 
 impl RepoSpies {
-    fn new(read_status_spy: Spy, write_status_spy: Spy) -> Self {
+    fn new(read_status_spy: Spy, write_status_spy: Spy<Status>) -> Self {
         Self {
             read_status_spy,
             write_status_spy,
@@ -105,8 +105,8 @@ impl RepoSpies {
         self.read_status_spy.method_called()
     }
 
-    pub fn write_called(&self) -> bool {
-        self.write_status_spy.method_called()
+    pub fn write_called_with_val(&self, status: &Status) -> bool {
+        self.write_status_spy.method_called_with_val(status)
     }
 }
 
