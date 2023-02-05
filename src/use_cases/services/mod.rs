@@ -1,3 +1,3 @@
-pub mod runner;
-pub mod sink;
-pub mod watcher;
+pub mod runner_shell;
+pub mod sink_shell;
+pub mod watcher_shell;

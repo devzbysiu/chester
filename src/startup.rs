@@ -1,7 +1,7 @@
 use crate::configuration::factories::Context;
-use crate::use_cases::services::runner::TestRunnerShell;
-use crate::use_cases::services::sink::ResultsSinkShell;
-use crate::use_cases::services::watcher::ChangeWatcherShell;
+use crate::use_cases::services::runner_shell::TestRunnerShell;
+use crate::use_cases::services::sink_shell::ResultsSinkShell;
+use crate::use_cases::services::watcher_shell::ChangeWatcherShell;
 
 #[allow(unused)]
 #[allow(clippy::needless_pass_by_value)]
