@@ -11,6 +11,7 @@ use crate::use_cases::test_runner::TestRunner;
 
 use std::sync::Arc;
 
+#[allow(unused)]
 pub struct Context {
     pub cfg: Config,
     pub bus: EventBus,

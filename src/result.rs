@@ -34,6 +34,9 @@ pub enum BusErr {
 pub enum SetupErr {
     #[error("Failed to create event bus.")]
     Bus(#[from] BusErr),
+
+    #[error("IO operation failed")]
+    Io(#[from] std::io::Error),
 }
 
 #[derive(Debug, Error)]

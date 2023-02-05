@@ -30,6 +30,7 @@ documentation = ""
 [dependencies]
 anyhow = "1.0.68"
 eventador = "0.0.18"
+interprocess = "1.2.1"
 log = "0.4.11"
 once_cell = "1.17.0"
 # TODO: move it back to original implementation after https://github.com/seanmonstar/pretty-env-logger/pull/49 is closed
