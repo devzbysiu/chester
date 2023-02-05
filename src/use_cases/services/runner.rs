@@ -8,7 +8,6 @@ use tracing::{debug, trace};
 type Result<T> = std::result::Result<T, RunnerErr>;
 
 pub struct TestRunnerShell {
-    #[allow(unused)]
     bus: EventBus,
 }
 

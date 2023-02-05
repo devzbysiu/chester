@@ -9,7 +9,6 @@ use tracing::error;
 type Result<T> = std::result::Result<T, SinkErr>;
 
 pub struct ResultsSinkShell {
-    #[allow(unused)]
     bus: EventBus,
 }
 

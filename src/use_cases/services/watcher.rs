@@ -11,7 +11,6 @@ use std::thread;
 type Result<T> = std::result::Result<T, WatcherErr>;
 
 pub struct ChangeWatcherShell {
-    #[allow(unused)]
     bus: EventBus,
 }
 
