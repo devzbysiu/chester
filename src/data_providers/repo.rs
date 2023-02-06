@@ -1,4 +1,4 @@
-use crate::entities::status::Status;
+use crate::entities::status::TestsStatus;
 use crate::result::{RepoReadErr, RepoWriteErr};
 use crate::use_cases::repo::{
     Repo, RepoRead, RepoWrite, Repository, RepositoryRead, RepositoryWrite,
@@ -6,7 +6,7 @@ use crate::use_cases::repo::{
 
 use std::sync::{Arc, RwLock};
 
-type RepoStatus = Arc<RwLock<Status>>;
+type RepoStatus = Arc<RwLock<TestsStatus>>;
 
 pub struct DefaultRepo {
     repo_read: RepoRead,
@@ -15,7 +15,7 @@ pub struct DefaultRepo {
 
 impl DefaultRepo {
     pub fn make() -> Repo {
-        let status = Arc::new(RwLock::new(Status::Pending));
+        let status = Arc::new(RwLock::new(TestsStatus::Pending));
         let repo_read = DefaultRepoRead::make(status.clone());
         let repo_write = DefaultRepoWrite::make(status);
         Box::new(Self {
@@ -46,7 +46,7 @@ impl DefaultRepoRead {
 }
 
 impl RepositoryRead for DefaultRepoRead {
-    fn status(&self) -> Result<Status, RepoReadErr> {
+    fn status(&self) -> Result<TestsStatus, RepoReadErr> {
         let status = self.status.read().expect("poisoned mutex");
         Ok(status.clone())
     }
@@ -63,7 +63,7 @@ impl DefaultRepoWrite {
 }
 
 impl RepositoryWrite for DefaultRepoWrite {
-    fn status(&self, new_status: Status) -> Result<(), RepoWriteErr> {
+    fn status(&self, new_status: TestsStatus) -> Result<(), RepoWriteErr> {
         let mut status = self.status.write().expect("poisoned mutex");
         *status = new_status;
         Ok(())
@@ -85,13 +85,13 @@ mod test {
         let repo = DefaultRepo::make();
         let repo_read = repo.read();
         let repo_write = repo.write();
-        assert_eq!(repo_read.status()?, Status::Pending);
+        assert_eq!(repo_read.status()?, TestsStatus::Pending);
 
         // when
-        repo_write.status(Status::Success)?;
+        repo_write.status(TestsStatus::Success)?;
 
         // then
-        assert_eq!(repo_read.status()?, Status::Success);
+        assert_eq!(repo_read.status()?, TestsStatus::Success);
 
         Ok(())
     }

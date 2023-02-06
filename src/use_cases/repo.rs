@@ -1,4 +1,4 @@
-use crate::entities::status::Status;
+use crate::entities::status::TestsStatus;
 use crate::result::{RepoReadErr, RepoWriteErr};
 
 use std::sync::Arc;
@@ -13,9 +13,9 @@ pub trait Repository: Send {
 }
 
 pub trait RepositoryRead: Sync + Send {
-    fn status(&self) -> Result<Status, RepoReadErr>;
+    fn status(&self) -> Result<TestsStatus, RepoReadErr>;
 }
 
 pub trait RepositoryWrite: Sync + Send {
-    fn status(&self, status: Status) -> Result<(), RepoWriteErr>;
+    fn status(&self, status: TestsStatus) -> Result<(), RepoWriteErr>;
 }

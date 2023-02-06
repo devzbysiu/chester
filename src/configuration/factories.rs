@@ -45,6 +45,6 @@ fn test_runner() -> TestRunner {
     DefaultTestRunner::make()
 }
 
-fn repo() -> Repo {
+pub fn repo() -> Repo {
     DefaultRepo::make()
 }

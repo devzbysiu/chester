@@ -1,4 +1,4 @@
-use crate::entities::status::Status;
+use crate::entities::status::TestsStatus;
 use crate::result::SinkErr;
 use crate::use_cases::bus::{BusEvent, EventBus};
 use crate::use_cases::repo::RepoWrite;
@@ -22,9 +22,9 @@ impl ResultsSinkShell {
         thread::spawn(move || -> Result<()> {
             loop {
                 match sub.recv() {
-                    Ok(BusEvent::TestsPassed) => repo_write.status(Status::Success)?,
-                    Ok(BusEvent::TestsFailed) => repo_write.status(Status::Failure)?,
-                    Ok(BusEvent::ChangeDetected) => repo_write.status(Status::Pending)?,
+                    Ok(BusEvent::TestsPassed) => repo_write.status(TestsStatus::Success)?,
+                    Ok(BusEvent::TestsFailed) => repo_write.status(TestsStatus::Failure)?,
+                    Ok(BusEvent::ChangeDetected) => repo_write.status(TestsStatus::Pending)?,
                     Err(_) => error!("failed to recv bus event"),
                 }
             }
@@ -53,7 +53,7 @@ mod test {
         shim.ignore_event()?;
 
         // then
-        assert!(repo_spy.write_called_with_val(&Status::Success));
+        assert!(repo_spy.write_called_with_val(&TestsStatus::Success));
 
         Ok(())
     }
@@ -70,7 +70,7 @@ mod test {
         shim.ignore_event()?;
 
         // then
-        assert!(repo_spy.write_called_with_val(&Status::Failure));
+        assert!(repo_spy.write_called_with_val(&TestsStatus::Failure));
 
         Ok(())
     }
@@ -87,7 +87,7 @@ mod test {
         shim.ignore_event()?;
 
         // then
-        assert!(repo_spy.write_called_with_val(&Status::Pending));
+        assert!(repo_spy.write_called_with_val(&TestsStatus::Pending));
 
         Ok(())
     }

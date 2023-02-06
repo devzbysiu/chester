@@ -1,9 +1,10 @@
 #![allow(clippy::module_name_repetitions)]
 
 use crate::configuration::tracing::init_tracing;
-use crate::startup::start_server;
+use crate::data_providers::server::start_server;
 
 use anyhow::Result;
+use configuration::factories::repo;
 
 mod configuration;
 mod data_providers;
@@ -15,10 +16,11 @@ mod startup;
 #[cfg(test)]
 mod testingtools;
 
-#[tokio::main]
+#[actix_web::main]
 async fn main() -> Result<()> {
     init_tracing();
-    start_server(None).await?;
+    let repo = repo();
+    start_server(repo.read()).await?;
 
     Ok(())
 }

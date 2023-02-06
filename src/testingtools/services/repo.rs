@@ -1,4 +1,4 @@
-use crate::entities::status::Status;
+use crate::entities::status::TestsStatus;
 use crate::result::{RepoReadErr, RepoWriteErr};
 use crate::testingtools::{pipe, MutexExt, Spy, Tx};
 use crate::use_cases::repo::{
@@ -21,7 +21,7 @@ impl TrackedRepo {
     fn wrap(repo: &Repo) -> (RepoSpies, Repo) {
         let (read_status_tx, read_status_spy) = pipe();
 
-        let (write_status_tx, write_status_spy) = pipe::<Status>();
+        let (write_status_tx, write_status_spy) = pipe::<TestsStatus>();
 
         (
             RepoSpies::new(read_status_spy, write_status_spy),
@@ -59,18 +59,18 @@ impl TrackedRepoRead {
 }
 
 impl RepositoryRead for TrackedRepoRead {
-    fn status(&self) -> Result<Status, RepoReadErr> {
+    fn status(&self) -> Result<TestsStatus, RepoReadErr> {
         self.read.status()
     }
 }
 
 pub struct TrackedRepoWrite {
     write: RepoWrite,
-    write_status_tx: Tx<Status>,
+    write_status_tx: Tx<TestsStatus>,
 }
 
 impl TrackedRepoWrite {
-    fn create(write: RepoWrite, write_status_tx: Tx<Status>) -> RepoWrite {
+    fn create(write: RepoWrite, write_status_tx: Tx<TestsStatus>) -> RepoWrite {
         Arc::new(Self {
             write,
             write_status_tx,
@@ -79,7 +79,7 @@ impl TrackedRepoWrite {
 }
 
 impl RepositoryWrite for TrackedRepoWrite {
-    fn status(&self, status: Status) -> Result<(), RepoWriteErr> {
+    fn status(&self, status: TestsStatus) -> Result<(), RepoWriteErr> {
         let res = self.write.status(status.clone());
         self.write_status_tx.signal(status);
         res
@@ -89,11 +89,11 @@ impl RepositoryWrite for TrackedRepoWrite {
 pub struct RepoSpies {
     #[allow(unused)]
     read_status_spy: Spy,
-    write_status_spy: Spy<Status>,
+    write_status_spy: Spy<TestsStatus>,
 }
 
 impl RepoSpies {
-    fn new(read_status_spy: Spy, write_status_spy: Spy<Status>) -> Self {
+    fn new(read_status_spy: Spy, write_status_spy: Spy<TestsStatus>) -> Self {
         Self {
             read_status_spy,
             write_status_spy,
@@ -105,7 +105,7 @@ impl RepoSpies {
         self.read_status_spy.method_called()
     }
 
-    pub fn write_called_with_val(&self, status: &Status) -> bool {
+    pub fn write_called_with_val(&self, status: &TestsStatus) -> bool {
         self.write_status_spy.method_called_with_val(status)
     }
 }
@@ -147,8 +147,8 @@ impl WorkingRepoRead {
 }
 
 impl RepositoryRead for WorkingRepoRead {
-    fn status(&self) -> Result<Status, RepoReadErr> {
-        Ok(Status::Success)
+    fn status(&self) -> Result<TestsStatus, RepoReadErr> {
+        Ok(TestsStatus::Success)
     }
 }
 
@@ -161,7 +161,7 @@ impl WorkingRepoWrite {
 }
 
 impl RepositoryWrite for WorkingRepoWrite {
-    fn status(&self, _status: Status) -> Result<(), RepoWriteErr> {
+    fn status(&self, _status: TestsStatus) -> Result<(), RepoWriteErr> {
         Ok(())
     }
 }
