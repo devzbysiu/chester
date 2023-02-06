@@ -6,6 +6,8 @@ use crate::use_cases::repo::{
 
 use std::sync::{Arc, RwLock};
 
+type RepoStatus = Arc<RwLock<Status>>;
+
 pub struct DefaultRepo {
     repo_read: RepoRead,
     repo_write: RepoWrite,
@@ -34,11 +36,11 @@ impl Repository for DefaultRepo {
 }
 
 pub struct DefaultRepoRead {
-    status: Arc<RwLock<Status>>,
+    status: RepoStatus,
 }
 
 impl DefaultRepoRead {
-    fn make(status: Arc<RwLock<Status>>) -> RepoRead {
+    fn make(status: RepoStatus) -> RepoRead {
         Arc::new(Self { status })
     }
 }
@@ -51,11 +53,11 @@ impl RepositoryRead for DefaultRepoRead {
 }
 
 pub struct DefaultRepoWrite {
-    status: Arc<RwLock<Status>>,
+    status: RepoStatus,
 }
 
 impl DefaultRepoWrite {
-    fn make(status: Arc<RwLock<Status>>) -> RepoWrite {
+    fn make(status: RepoStatus) -> RepoWrite {
         Arc::new(Self { status })
     }
 }
@@ -70,9 +72,9 @@ impl RepositoryWrite for DefaultRepoWrite {
 
 #[cfg(test)]
 mod test {
-    use crate::configuration::tracing::init_tracing;
-
     use super::*;
+
+    use crate::configuration::tracing::init_tracing;
 
     use anyhow::Result;
 
