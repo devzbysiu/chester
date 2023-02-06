@@ -1,7 +1,7 @@
 use crate::configuration::config::Config;
 use crate::data_providers::bus::LocalBus;
 use crate::data_providers::change_watcher::DefaultChangeWatcher;
-use crate::data_providers::repo::DefaultRepo;
+use crate::data_providers::repo::InMemoryRepo;
 use crate::data_providers::test_runner::DefaultTestRunner;
 use crate::result::{BusErr, SetupErr};
 use crate::use_cases::bus::EventBus;
@@ -46,5 +46,5 @@ fn test_runner() -> TestRunner {
 }
 
 pub fn repo() -> Repo {
-    DefaultRepo::make()
+    InMemoryRepo::make()
 }

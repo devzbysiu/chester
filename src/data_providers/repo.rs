@@ -8,16 +8,16 @@ use std::sync::{Arc, RwLock};
 
 type RepoStatus = Arc<RwLock<TestsStatus>>;
 
-pub struct DefaultRepo {
+pub struct InMemoryRepo {
     repo_read: RepoRead,
     repo_write: RepoWrite,
 }
 
-impl DefaultRepo {
+impl InMemoryRepo {
     pub fn make() -> Repo {
         let status = Arc::new(RwLock::new(TestsStatus::Pending));
-        let repo_read = DefaultRepoRead::make(status.clone());
-        let repo_write = DefaultRepoWrite::make(status);
+        let repo_read = InMemoryRepoRead::make(status.clone());
+        let repo_write = InMemoryRepoWrite::make(status);
         Box::new(Self {
             repo_read,
             repo_write,
@@ -25,7 +25,7 @@ impl DefaultRepo {
     }
 }
 
-impl Repository for DefaultRepo {
+impl Repository for InMemoryRepo {
     fn read(&self) -> RepoRead {
         self.repo_read.clone()
     }
@@ -35,34 +35,34 @@ impl Repository for DefaultRepo {
     }
 }
 
-pub struct DefaultRepoRead {
+pub struct InMemoryRepoRead {
     status: RepoStatus,
 }
 
-impl DefaultRepoRead {
+impl InMemoryRepoRead {
     fn make(status: RepoStatus) -> RepoRead {
         Arc::new(Self { status })
     }
 }
 
-impl RepositoryRead for DefaultRepoRead {
+impl RepositoryRead for InMemoryRepoRead {
     fn status(&self) -> Result<TestsStatus, RepoReadErr> {
         let status = self.status.read().expect("poisoned mutex");
         Ok(status.clone())
     }
 }
 
-pub struct DefaultRepoWrite {
+pub struct InMemoryRepoWrite {
     status: RepoStatus,
 }
 
-impl DefaultRepoWrite {
+impl InMemoryRepoWrite {
     fn make(status: RepoStatus) -> RepoWrite {
         Arc::new(Self { status })
     }
 }
 
-impl RepositoryWrite for DefaultRepoWrite {
+impl RepositoryWrite for InMemoryRepoWrite {
     fn status(&self, new_status: TestsStatus) -> Result<(), RepoWriteErr> {
         let mut status = self.status.write().expect("poisoned mutex");
         *status = new_status;
@@ -82,7 +82,7 @@ mod test {
     fn what_is_written_to_repo_can_be_read() -> Result<()> {
         // given
         init_tracing();
-        let repo = DefaultRepo::make();
+        let repo = InMemoryRepo::make();
         let repo_read = repo.read();
         let repo_write = repo.write();
         assert_eq!(repo_read.status()?, TestsStatus::Pending);
