@@ -28,7 +28,7 @@ impl StatusResponse {
     }
 }
 
-pub async fn start_server(repo_read: RepoReader) -> std::io::Result<()> {
+pub async fn start_server(repo_reader: RepoReader) -> std::io::Result<()> {
     let socket_path = dirs::runtime_dir().unwrap_or(PathBuf::from("/run"));
     let socket_path = socket_path.join("chester.sock");
     HttpServer::new(move || {
@@ -37,7 +37,7 @@ pub async fn start_server(repo_read: RepoReader) -> std::io::Result<()> {
             .wrap(middleware::DefaultHeaders::new())
             .wrap(middleware::Compress::default())
             .wrap(middleware::Logger::default())
-            .app_data(web::Data::new(repo_read.clone()))
+            .app_data(web::Data::new(repo_reader.clone()))
             .service(status)
     })
     .bind_uds(socket_path)?

@@ -9,29 +9,29 @@ use std::sync::{Arc, RwLock};
 type RepoStatus = Arc<RwLock<TestsStatus>>;
 
 pub struct InMemoryRepo {
-    repo_read: RepoReader,
-    repo_write: RepoWriter,
+    repo_reader: RepoReader,
+    repo_writer: RepoWriter,
 }
 
 impl InMemoryRepo {
     pub fn make() -> Repo {
         let status = Arc::new(RwLock::new(TestsStatus::Pending));
-        let repo_read = InMemoryRepoRead::make(status.clone());
-        let repo_write = InMemoryRepoWrite::make(status);
+        let repo_reader = InMemoryRepoRead::make(status.clone());
+        let repo_writer = InMemoryRepoWrite::make(status);
         Box::new(Self {
-            repo_read,
-            repo_write,
+            repo_reader,
+            repo_writer,
         })
     }
 }
 
 impl Repository for InMemoryRepo {
     fn reader(&self) -> RepoReader {
-        self.repo_read.clone()
+        self.repo_reader.clone()
     }
 
     fn writer(&self) -> RepoWriter {
-        self.repo_write.clone()
+        self.repo_writer.clone()
     }
 }
 
@@ -83,15 +83,15 @@ mod test {
         // given
         init_tracing();
         let repo = InMemoryRepo::make();
-        let repo_read = repo.reader();
-        let repo_write = repo.writer();
-        assert_eq!(repo_read.status()?, TestsStatus::Pending);
+        let repo_reader = repo.reader();
+        let repo_writer = repo.writer();
+        assert_eq!(repo_reader.status()?, TestsStatus::Pending);
 
         // when
-        repo_write.status(TestsStatus::Success)?;
+        repo_writer.status(TestsStatus::Success)?;
 
         // then
-        assert_eq!(repo_read.status()?, TestsStatus::Success);
+        assert_eq!(repo_reader.status()?, TestsStatus::Success);
 
         Ok(())
     }

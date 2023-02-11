@@ -17,14 +17,14 @@ impl ResultsSinkShell {
         Self { bus }
     }
 
-    pub fn run(&self, repo_write: RepoWriter) {
+    pub fn run(&self, repo_writer: RepoWriter) {
         let sub = self.bus.subscriber();
         thread::spawn(move || -> Result<()> {
             loop {
                 match sub.recv() {
-                    Ok(BusEvent::TestsPassed) => repo_write.status(TestsStatus::Success)?,
-                    Ok(BusEvent::TestsFailed) => repo_write.status(TestsStatus::Failure)?,
-                    Ok(BusEvent::ChangeDetected) => repo_write.status(TestsStatus::Pending)?,
+                    Ok(BusEvent::TestsPassed) => repo_writer.status(TestsStatus::Success)?,
+                    Ok(BusEvent::TestsFailed) => repo_writer.status(TestsStatus::Failure)?,
+                    Ok(BusEvent::ChangeDetected) => repo_writer.status(TestsStatus::Pending)?,
                     Err(_) => error!("failed to recv bus event"),
                 }
             }
