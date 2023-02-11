@@ -1,11 +1,10 @@
+use crate::entities::repo_root::RepoRoot;
 use crate::result::RunnerErr;
-
-use std::path::PathBuf;
 
 pub type TestRunner = Box<dyn Runner>;
 
 pub trait Runner: Send {
-    fn run_all(&self, repo_root: PathBuf) -> Result<TestsStatus, RunnerErr>;
+    fn run_all(&self, repo_root: RepoRoot) -> Result<TestsStatus, RunnerErr>;
 }
 
 #[allow(unused)]

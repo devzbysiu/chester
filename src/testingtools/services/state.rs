@@ -1,3 +1,4 @@
+use crate::entities::repo_root::RepoRoot;
 use crate::entities::status::TestsStatus;
 use crate::result::{StateReaderErr, StateWriterErr};
 use crate::testingtools::{pipe, MutexExt, Spy, Tx};
@@ -6,7 +7,6 @@ use crate::use_cases::state::{
 };
 
 use anyhow::Result;
-use std::path::PathBuf;
 use std::sync::Arc;
 
 pub fn tracked(state: &State) -> (StateSpies, State) {
@@ -24,7 +24,7 @@ impl TrackedState {
 
         let (write_status_tx, write_status_spy) = pipe::<TestsStatus>();
 
-        let (write_repo_root_tx, write_repo_root_spy) = pipe::<PathBuf>();
+        let (write_repo_root_tx, write_repo_root_spy) = pipe::<RepoRoot>();
 
         (
             StateSpies::new(read_status_spy, write_status_spy, write_repo_root_spy),
@@ -70,7 +70,7 @@ impl AppStateReader for TrackedStateRead {
         self.read.status()
     }
 
-    fn repo_root(&self) -> Result<PathBuf, StateReaderErr> {
+    fn repo_root(&self) -> Result<RepoRoot, StateReaderErr> {
         self.read.repo_root()
     }
 }
@@ -78,14 +78,14 @@ impl AppStateReader for TrackedStateRead {
 pub struct TrackedStateWrite {
     write: StateWriter,
     write_status_tx: Tx<TestsStatus>,
-    write_repo_root_tx: Tx<PathBuf>,
+    write_repo_root_tx: Tx<RepoRoot>,
 }
 
 impl TrackedStateWrite {
     fn create(
         write: StateWriter,
         write_status_tx: Tx<TestsStatus>,
-        write_repo_root_tx: Tx<PathBuf>,
+        write_repo_root_tx: Tx<RepoRoot>,
     ) -> StateWriter {
         Arc::new(Self {
             write,
@@ -102,7 +102,7 @@ impl AppStateWriter for TrackedStateWrite {
         res
     }
 
-    fn repo_root(&self, repo_root: PathBuf) -> Result<(), StateWriterErr> {
+    fn repo_root(&self, repo_root: RepoRoot) -> Result<(), StateWriterErr> {
         let res = self.write.repo_root(repo_root.clone());
         self.write_repo_root_tx.signal(repo_root);
         res
@@ -113,14 +113,14 @@ pub struct StateSpies {
     #[allow(unused)]
     read_status_spy: Spy,
     write_status_spy: Spy<TestsStatus>,
-    write_repo_root_spy: Spy<PathBuf>,
+    write_repo_root_spy: Spy<RepoRoot>,
 }
 
 impl StateSpies {
     fn new(
         read_status_spy: Spy,
         write_status_spy: Spy<TestsStatus>,
-        write_repo_root_spy: Spy<PathBuf>,
+        write_repo_root_spy: Spy<RepoRoot>,
     ) -> Self {
         Self {
             read_status_spy,
@@ -139,7 +139,7 @@ impl StateSpies {
     }
 
     #[allow(unused)]
-    pub fn repo_root_called_with_val(&self, repo_root: &PathBuf) -> bool {
+    pub fn repo_root_called_with_val(&self, repo_root: &RepoRoot) -> bool {
         self.write_repo_root_spy.method_called_with_val(repo_root)
     }
 }
@@ -189,8 +189,8 @@ impl AppStateReader for WorkingStateRead {
         Ok(TestsStatus::Success)
     }
 
-    fn repo_root(&self) -> Result<PathBuf, StateReaderErr> {
-        Ok(PathBuf::new())
+    fn repo_root(&self) -> Result<RepoRoot, StateReaderErr> {
+        Ok(RepoRoot::new())
     }
 }
 
@@ -207,7 +207,7 @@ impl AppStateWriter for WorkingStateWrite {
         Ok(())
     }
 
-    fn repo_root(&self, _repo_root: PathBuf) -> Result<(), StateWriterErr> {
+    fn repo_root(&self, _repo_root: RepoRoot) -> Result<(), StateWriterErr> {
         Ok(())
     }
 }
