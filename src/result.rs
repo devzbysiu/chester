@@ -21,8 +21,8 @@ pub enum SinkErr {
     #[error("Error when using bus.")]
     Bus(#[from] BusErr),
 
-    #[error("Failed to write to repo.")]
-    Write(#[from] RepoWriterErr),
+    #[error("Failed to write to state.")]
+    Write(#[from] StateWriterErr),
 }
 
 #[derive(Debug, Error)]
@@ -42,15 +42,15 @@ pub enum SetupErr {
     #[error("Failed to setup server.")]
     Hyper(#[from] hyper::Error),
 
-    #[error("Failed to read from repo.")]
-    Read(#[from] RepoReaderErr),
+    #[error("Failed to read from state.")]
+    Read(#[from] StateReaderErr),
 }
 
 #[derive(Debug, Error)]
-pub enum RepoReaderErr {}
+pub enum StateReaderErr {}
 
 #[derive(Debug, Error)]
-pub enum RepoWriterErr {}
+pub enum StateWriterErr {}
 
 #[derive(Debug, Error)]
 pub enum ServerErr {

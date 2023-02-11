@@ -1,6 +1,6 @@
 use crate::entities::status::TestsStatus;
 use crate::result::ServerErr;
-use crate::use_cases::repo::RepoReader;
+use crate::use_cases::state::StateReader;
 
 use actix_web::{get, middleware, web, App, HttpServer};
 use anyhow::anyhow;
@@ -10,7 +10,7 @@ use tracing_actix_web::TracingLogger;
 
 #[allow(clippy::unused_async)]
 #[get("/tests/status")]
-async fn status(state: web::Data<RepoReader>) -> Result<web::Json<StatusResponse>, ServerErr> {
+async fn status(state: web::Data<StateReader>) -> Result<web::Json<StatusResponse>, ServerErr> {
     let status = state
         .status()
         .map_err(|_| ServerErr::Generic(anyhow!("Error during exection.")))?;
@@ -28,7 +28,7 @@ impl StatusResponse {
     }
 }
 
-pub async fn start_server(repo_reader: RepoReader) -> std::io::Result<()> {
+pub async fn start_server(state: StateReader) -> std::io::Result<()> {
     let socket_path = dirs::runtime_dir().unwrap_or(PathBuf::from("/run"));
     let socket_path = socket_path.join("chester.sock");
     HttpServer::new(move || {
@@ -37,7 +37,7 @@ pub async fn start_server(repo_reader: RepoReader) -> std::io::Result<()> {
             .wrap(middleware::DefaultHeaders::new())
             .wrap(middleware::Compress::default())
             .wrap(middleware::Logger::default())
-            .app_data(web::Data::new(repo_reader.clone()))
+            .app_data(web::Data::new(state.clone()))
             .service(status)
     })
     .bind_uds(socket_path)?

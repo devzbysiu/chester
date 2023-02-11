@@ -1,12 +1,12 @@
 use crate::configuration::config::Config;
 use crate::data_providers::bus::LocalBus;
 use crate::data_providers::change_watcher::DefaultChangeWatcher;
-use crate::data_providers::repo::InMemoryRepo;
+use crate::data_providers::state::InMemoryState;
 use crate::data_providers::test_runner::DefaultTestRunner;
 use crate::result::{BusErr, SetupErr};
 use crate::use_cases::bus::EventBus;
 use crate::use_cases::change_watcher::ChangeWatcher;
-use crate::use_cases::repo::Repo;
+use crate::use_cases::state::State;
 use crate::use_cases::test_runner::TestRunner;
 
 use std::sync::Arc;
@@ -17,7 +17,7 @@ pub struct Context {
     pub bus: EventBus,
     pub change_watcher: ChangeWatcher,
     pub test_runner: TestRunner,
-    pub repo: Repo,
+    pub state: State,
 }
 
 impl Context {
@@ -28,7 +28,7 @@ impl Context {
             bus: event_bus()?,
             change_watcher: change_watcher(),
             test_runner: test_runner(),
-            repo: repo(),
+            state: state(),
         })
     }
 }
@@ -45,6 +45,6 @@ fn test_runner() -> TestRunner {
     DefaultTestRunner::make()
 }
 
-pub fn repo() -> Repo {
-    InMemoryRepo::make()
+pub fn state() -> State {
+    InMemoryState::make()
 }

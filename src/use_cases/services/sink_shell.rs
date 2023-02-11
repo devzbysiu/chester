@@ -1,7 +1,7 @@
 use crate::entities::status::TestsStatus;
 use crate::result::SinkErr;
 use crate::use_cases::bus::{BusEvent, EventBus};
-use crate::use_cases::repo::RepoWriter;
+use crate::use_cases::state::StateWriter;
 
 use std::thread;
 use tracing::error;
@@ -17,14 +17,14 @@ impl ResultsSinkShell {
         Self { bus }
     }
 
-    pub fn run(&self, repo_writer: RepoWriter) {
+    pub fn run(&self, state_writer: StateWriter) {
         let sub = self.bus.subscriber();
         thread::spawn(move || -> Result<()> {
             loop {
                 match sub.recv() {
-                    Ok(BusEvent::TestsPassed) => repo_writer.status(TestsStatus::Success)?,
-                    Ok(BusEvent::TestsFailed) => repo_writer.status(TestsStatus::Failure)?,
-                    Ok(BusEvent::ChangeDetected) => repo_writer.status(TestsStatus::Pending)?,
+                    Ok(BusEvent::TestsPassed) => state_writer.status(TestsStatus::Success)?,
+                    Ok(BusEvent::TestsFailed) => state_writer.status(TestsStatus::Failure)?,
+                    Ok(BusEvent::ChangeDetected) => state_writer.status(TestsStatus::Pending)?,
                     Err(_) => error!("failed to recv bus event"),
                 }
             }
@@ -36,58 +36,58 @@ impl ResultsSinkShell {
 mod test {
     use super::*;
 
-    use crate::testingtools::services::repo::{tracked, working};
+    use crate::testingtools::services::state::{tracked, working};
     use crate::testingtools::unit::create_test_shim;
 
     use anyhow::Result;
 
     #[test]
-    fn when_tests_succeed_success_is_writen_to_repo() -> Result<()> {
+    fn when_tests_succeed_success_is_writen_to_state() -> Result<()> {
         // given
         let shim = create_test_shim()?;
-        let (repo_spy, repo) = tracked(&working());
-        ResultsSinkShell::new(shim.bus()).run(repo.writer());
+        let (state_spy, state) = tracked(&working());
+        ResultsSinkShell::new(shim.bus()).run(state.writer());
 
         // when
         shim.simulate_tests_succeeded()?;
         shim.ignore_event()?;
 
         // then
-        assert!(repo_spy.write_called_with_val(&TestsStatus::Success));
+        assert!(state_spy.write_called_with_val(&TestsStatus::Success));
 
         Ok(())
     }
 
     #[test]
-    fn when_tests_fail_failure_is_written_to_repo() -> Result<()> {
+    fn when_tests_fail_failure_is_written_to_state() -> Result<()> {
         // given
         let shim = create_test_shim()?;
-        let (repo_spy, repo) = tracked(&working());
-        ResultsSinkShell::new(shim.bus()).run(repo.writer());
+        let (state_spy, state) = tracked(&working());
+        ResultsSinkShell::new(shim.bus()).run(state.writer());
 
         // when
         shim.simulate_tests_failed()?;
         shim.ignore_event()?;
 
         // then
-        assert!(repo_spy.write_called_with_val(&TestsStatus::Failure));
+        assert!(state_spy.write_called_with_val(&TestsStatus::Failure));
 
         Ok(())
     }
 
     #[test]
-    fn when_tests_start_pending_is_written_to_repo() -> Result<()> {
+    fn when_tests_start_pending_is_written_to_state() -> Result<()> {
         // given
         let shim = create_test_shim()?;
-        let (repo_spy, repo) = tracked(&working());
-        ResultsSinkShell::new(shim.bus()).run(repo.writer());
+        let (state_spy, state) = tracked(&working());
+        ResultsSinkShell::new(shim.bus()).run(state.writer());
 
         // when
         shim.simulate_change()?;
         shim.ignore_event()?;
 
         // then
-        assert!(repo_spy.write_called_with_val(&TestsStatus::Pending));
+        assert!(state_spy.write_called_with_val(&TestsStatus::Pending));
 
         Ok(())
     }
