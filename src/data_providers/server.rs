@@ -1,6 +1,6 @@
 use crate::entities::status::TestsStatus;
 use crate::result::ServerErr;
-use crate::use_cases::repo::RepoRead;
+use crate::use_cases::repo::RepoReader;
 
 use actix_web::{get, middleware, web, App, HttpServer};
 use anyhow::anyhow;
@@ -10,7 +10,7 @@ use tracing_actix_web::TracingLogger;
 
 #[allow(clippy::unused_async)]
 #[get("/tests/status")]
-async fn status(state: web::Data<RepoRead>) -> Result<web::Json<StatusResponse>, ServerErr> {
+async fn status(state: web::Data<RepoReader>) -> Result<web::Json<StatusResponse>, ServerErr> {
     let status = state
         .status()
         .map_err(|_| ServerErr::Generic(anyhow!("Error during exection.")))?;
@@ -28,7 +28,7 @@ impl StatusResponse {
     }
 }
 
-pub async fn start_server(repo_read: RepoRead) -> std::io::Result<()> {
+pub async fn start_server(repo_read: RepoReader) -> std::io::Result<()> {
     let socket_path = dirs::runtime_dir().unwrap_or(PathBuf::from("/run"));
     let socket_path = socket_path.join("chester.sock");
     HttpServer::new(move || {

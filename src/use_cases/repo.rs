@@ -1,21 +1,21 @@
 use crate::entities::status::TestsStatus;
-use crate::result::{RepoReadErr, RepoWriteErr};
+use crate::result::{RepoReaderErr, RepoWriterErr};
 
 use std::sync::Arc;
 
 pub type Repo = Box<dyn Repository>;
-pub type RepoRead = Arc<dyn RepositoryRead>;
-pub type RepoWrite = Arc<dyn RepositoryWrite>;
+pub type RepoReader = Arc<dyn RepositoryReader>;
+pub type RepoWriter = Arc<dyn RepositoryWriter>;
 
 pub trait Repository: Send {
-    fn read(&self) -> RepoRead;
-    fn write(&self) -> RepoWrite;
+    fn reader(&self) -> RepoReader;
+    fn writer(&self) -> RepoWriter;
 }
 
-pub trait RepositoryRead: Sync + Send {
-    fn status(&self) -> Result<TestsStatus, RepoReadErr>;
+pub trait RepositoryReader: Sync + Send {
+    fn status(&self) -> Result<TestsStatus, RepoReaderErr>;
 }
 
-pub trait RepositoryWrite: Sync + Send {
-    fn status(&self, status: TestsStatus) -> Result<(), RepoWriteErr>;
+pub trait RepositoryWriter: Sync + Send {
+    fn status(&self, status: TestsStatus) -> Result<(), RepoWriterErr>;
 }

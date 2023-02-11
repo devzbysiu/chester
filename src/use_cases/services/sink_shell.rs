@@ -1,7 +1,7 @@
 use crate::entities::status::TestsStatus;
 use crate::result::SinkErr;
 use crate::use_cases::bus::{BusEvent, EventBus};
-use crate::use_cases::repo::RepoWrite;
+use crate::use_cases::repo::RepoWriter;
 
 use std::thread;
 use tracing::error;
@@ -17,7 +17,7 @@ impl ResultsSinkShell {
         Self { bus }
     }
 
-    pub fn run(&self, repo_write: RepoWrite) {
+    pub fn run(&self, repo_write: RepoWriter) {
         let sub = self.bus.subscriber();
         thread::spawn(move || -> Result<()> {
             loop {
@@ -46,7 +46,7 @@ mod test {
         // given
         let shim = create_test_shim()?;
         let (repo_spy, repo) = tracked(&working());
-        ResultsSinkShell::new(shim.bus()).run(repo.write());
+        ResultsSinkShell::new(shim.bus()).run(repo.writer());
 
         // when
         shim.simulate_tests_succeeded()?;
@@ -63,7 +63,7 @@ mod test {
         // given
         let shim = create_test_shim()?;
         let (repo_spy, repo) = tracked(&working());
-        ResultsSinkShell::new(shim.bus()).run(repo.write());
+        ResultsSinkShell::new(shim.bus()).run(repo.writer());
 
         // when
         shim.simulate_tests_failed()?;
@@ -80,7 +80,7 @@ mod test {
         // given
         let shim = create_test_shim()?;
         let (repo_spy, repo) = tracked(&working());
-        ResultsSinkShell::new(shim.bus()).run(repo.write());
+        ResultsSinkShell::new(shim.bus()).run(repo.writer());
 
         // when
         shim.simulate_change()?;

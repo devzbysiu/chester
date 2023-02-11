@@ -20,7 +20,7 @@ mod testingtools;
 async fn main() -> Result<()> {
     init_tracing();
     let repo = repo();
-    start_server(repo.read()).await?;
+    start_server(repo.reader()).await?;
 
     Ok(())
 }

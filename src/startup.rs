@@ -1,12 +1,12 @@
 use crate::configuration::factories::Context;
-use crate::use_cases::repo::RepoRead;
+use crate::use_cases::repo::RepoReader;
 use crate::use_cases::services::runner_shell::TestRunnerShell;
 use crate::use_cases::services::sink_shell::ResultsSinkShell;
 use crate::use_cases::services::watcher_shell::ChangeWatcherShell;
 
 #[allow(unused)]
 #[allow(clippy::needless_pass_by_value)]
-pub fn setup_shells(ctx: Context) -> RepoRead {
+pub fn setup_shells(ctx: Context) -> RepoReader {
     let Context {
         cfg: _,
         bus,
@@ -21,7 +21,7 @@ pub fn setup_shells(ctx: Context) -> RepoRead {
 
     watcher_shell.run(change_watcher);
     runner_shell.run(test_runner);
-    sink_shell.run(repo.write());
+    sink_shell.run(repo.writer());
 
-    repo.read()
+    repo.reader()
 }

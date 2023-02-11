@@ -22,7 +22,7 @@ pub enum SinkErr {
     Bus(#[from] BusErr),
 
     #[error("Failed to write to repo.")]
-    Write(#[from] RepoWriteErr),
+    Write(#[from] RepoWriterErr),
 }
 
 #[derive(Debug, Error)]
@@ -43,14 +43,14 @@ pub enum SetupErr {
     Hyper(#[from] hyper::Error),
 
     #[error("Failed to read from repo.")]
-    Read(#[from] RepoReadErr),
+    Read(#[from] RepoReaderErr),
 }
 
 #[derive(Debug, Error)]
-pub enum RepoReadErr {}
+pub enum RepoReaderErr {}
 
 #[derive(Debug, Error)]
-pub enum RepoWriteErr {}
+pub enum RepoWriterErr {}
 
 #[derive(Debug, Error)]
 pub enum ServerErr {

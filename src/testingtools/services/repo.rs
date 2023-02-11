@@ -1,8 +1,8 @@
 use crate::entities::status::TestsStatus;
-use crate::result::{RepoReadErr, RepoWriteErr};
+use crate::result::{RepoReaderErr, RepoWriterErr};
 use crate::testingtools::{pipe, MutexExt, Spy, Tx};
 use crate::use_cases::repo::{
-    Repo, RepoRead, RepoWrite, Repository, RepositoryRead, RepositoryWrite,
+    Repo, RepoReader, RepoWriter, Repository, RepositoryReader, RepositoryWriter,
 };
 
 use anyhow::Result;
@@ -13,8 +13,8 @@ pub fn tracked(repo: &Repo) -> (RepoSpies, Repo) {
 }
 
 pub struct TrackedRepo {
-    read: RepoRead,
-    write: RepoWrite,
+    read: RepoReader,
+    write: RepoWriter,
 }
 
 impl TrackedRepo {
@@ -26,31 +26,31 @@ impl TrackedRepo {
         (
             RepoSpies::new(read_status_spy, write_status_spy),
             Box::new(Self {
-                read: TrackedRepoRead::create(repo.read(), read_status_tx),
-                write: TrackedRepoWrite::create(repo.write(), write_status_tx),
+                read: TrackedRepoRead::create(repo.reader(), read_status_tx),
+                write: TrackedRepoWrite::create(repo.writer(), write_status_tx),
             }),
         )
     }
 }
 
 impl Repository for TrackedRepo {
-    fn read(&self) -> RepoRead {
+    fn reader(&self) -> RepoReader {
         self.read.clone()
     }
 
-    fn write(&self) -> RepoWrite {
+    fn writer(&self) -> RepoWriter {
         self.write.clone()
     }
 }
 
 pub struct TrackedRepoRead {
-    read: RepoRead,
+    read: RepoReader,
     #[allow(unused)]
     read_status_tx: Tx,
 }
 
 impl TrackedRepoRead {
-    fn create(read: RepoRead, read_status_tx: Tx) -> RepoRead {
+    fn create(read: RepoReader, read_status_tx: Tx) -> RepoReader {
         Arc::new(Self {
             read,
             read_status_tx,
@@ -58,19 +58,19 @@ impl TrackedRepoRead {
     }
 }
 
-impl RepositoryRead for TrackedRepoRead {
-    fn status(&self) -> Result<TestsStatus, RepoReadErr> {
+impl RepositoryReader for TrackedRepoRead {
+    fn status(&self) -> Result<TestsStatus, RepoReaderErr> {
         self.read.status()
     }
 }
 
 pub struct TrackedRepoWrite {
-    write: RepoWrite,
+    write: RepoWriter,
     write_status_tx: Tx<TestsStatus>,
 }
 
 impl TrackedRepoWrite {
-    fn create(write: RepoWrite, write_status_tx: Tx<TestsStatus>) -> RepoWrite {
+    fn create(write: RepoWriter, write_status_tx: Tx<TestsStatus>) -> RepoWriter {
         Arc::new(Self {
             write,
             write_status_tx,
@@ -78,8 +78,8 @@ impl TrackedRepoWrite {
     }
 }
 
-impl RepositoryWrite for TrackedRepoWrite {
-    fn status(&self, status: TestsStatus) -> Result<(), RepoWriteErr> {
+impl RepositoryWriter for TrackedRepoWrite {
+    fn status(&self, status: TestsStatus) -> Result<(), RepoWriterErr> {
         let res = self.write.status(status.clone());
         self.write_status_tx.signal(status);
         res
@@ -115,8 +115,8 @@ pub fn working() -> Repo {
 }
 
 struct WorkingRepo {
-    read: RepoRead,
-    write: RepoWrite,
+    read: RepoReader,
+    write: RepoWriter,
 }
 
 impl WorkingRepo {
@@ -129,11 +129,11 @@ impl WorkingRepo {
 }
 
 impl Repository for WorkingRepo {
-    fn read(&self) -> RepoRead {
+    fn reader(&self) -> RepoReader {
         self.read.clone()
     }
 
-    fn write(&self) -> RepoWrite {
+    fn writer(&self) -> RepoWriter {
         self.write.clone()
     }
 }
@@ -146,8 +146,8 @@ impl WorkingRepoRead {
     }
 }
 
-impl RepositoryRead for WorkingRepoRead {
-    fn status(&self) -> Result<TestsStatus, RepoReadErr> {
+impl RepositoryReader for WorkingRepoRead {
+    fn status(&self) -> Result<TestsStatus, RepoReaderErr> {
         Ok(TestsStatus::Success)
     }
 }
@@ -160,8 +160,8 @@ impl WorkingRepoWrite {
     }
 }
 
-impl RepositoryWrite for WorkingRepoWrite {
-    fn status(&self, _status: TestsStatus) -> Result<(), RepoWriteErr> {
+impl RepositoryWriter for WorkingRepoWrite {
+    fn status(&self, _status: TestsStatus) -> Result<(), RepoWriterErr> {
         Ok(())
     }
 }

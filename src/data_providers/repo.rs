@@ -1,7 +1,7 @@
 use crate::entities::status::TestsStatus;
-use crate::result::{RepoReadErr, RepoWriteErr};
+use crate::result::{RepoReaderErr, RepoWriterErr};
 use crate::use_cases::repo::{
-    Repo, RepoRead, RepoWrite, Repository, RepositoryRead, RepositoryWrite,
+    Repo, RepoReader, RepoWriter, Repository, RepositoryReader, RepositoryWriter,
 };
 
 use std::sync::{Arc, RwLock};
@@ -9,8 +9,8 @@ use std::sync::{Arc, RwLock};
 type RepoStatus = Arc<RwLock<TestsStatus>>;
 
 pub struct InMemoryRepo {
-    repo_read: RepoRead,
-    repo_write: RepoWrite,
+    repo_read: RepoReader,
+    repo_write: RepoWriter,
 }
 
 impl InMemoryRepo {
@@ -26,11 +26,11 @@ impl InMemoryRepo {
 }
 
 impl Repository for InMemoryRepo {
-    fn read(&self) -> RepoRead {
+    fn reader(&self) -> RepoReader {
         self.repo_read.clone()
     }
 
-    fn write(&self) -> RepoWrite {
+    fn writer(&self) -> RepoWriter {
         self.repo_write.clone()
     }
 }
@@ -40,13 +40,13 @@ pub struct InMemoryRepoRead {
 }
 
 impl InMemoryRepoRead {
-    fn make(status: RepoStatus) -> RepoRead {
+    fn make(status: RepoStatus) -> RepoReader {
         Arc::new(Self { status })
     }
 }
 
-impl RepositoryRead for InMemoryRepoRead {
-    fn status(&self) -> Result<TestsStatus, RepoReadErr> {
+impl RepositoryReader for InMemoryRepoRead {
+    fn status(&self) -> Result<TestsStatus, RepoReaderErr> {
         let status = self.status.read().expect("poisoned mutex");
         Ok(status.clone())
     }
@@ -57,13 +57,13 @@ pub struct InMemoryRepoWrite {
 }
 
 impl InMemoryRepoWrite {
-    fn make(status: RepoStatus) -> RepoWrite {
+    fn make(status: RepoStatus) -> RepoWriter {
         Arc::new(Self { status })
     }
 }
 
-impl RepositoryWrite for InMemoryRepoWrite {
-    fn status(&self, new_status: TestsStatus) -> Result<(), RepoWriteErr> {
+impl RepositoryWriter for InMemoryRepoWrite {
+    fn status(&self, new_status: TestsStatus) -> Result<(), RepoWriterErr> {
         let mut status = self.status.write().expect("poisoned mutex");
         *status = new_status;
         Ok(())
@@ -83,8 +83,8 @@ mod test {
         // given
         init_tracing();
         let repo = InMemoryRepo::make();
-        let repo_read = repo.read();
-        let repo_write = repo.write();
+        let repo_read = repo.reader();
+        let repo_write = repo.writer();
         assert_eq!(repo_read.status()?, TestsStatus::Pending);
 
         // when
