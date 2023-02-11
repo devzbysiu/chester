@@ -22,7 +22,7 @@ impl TestRunnerShell {
         thread::spawn(move || -> Result<()> {
             loop {
                 if let Ok(BusEvent::ChangeDetected) = sub.recv() {
-                    if let Ok(TestsStatus::Success) = test_runner.run() {
+                    if let Ok(TestsStatus::Success) = test_runner.run_all() {
                         debug!("tests passed");
                         publ.send(BusEvent::TestsPassed)?;
                     } else {

@@ -1,3 +1,5 @@
+use cmd_lib::run_cmd;
+
 use crate::result::RunnerErr;
 use crate::use_cases::test_runner::{Runner, TestRunner, TestsStatus};
 
@@ -10,7 +12,11 @@ impl DefaultTestRunner {
 }
 
 impl Runner for DefaultTestRunner {
-    fn run(&self) -> Result<TestsStatus, RunnerErr> {
-        todo!()
+    fn run_all(&self) -> Result<TestsStatus, RunnerErr> {
+        if run_cmd!(cd ~/Projects/chester ; cargo test).is_ok() {
+            Ok(TestsStatus::Success)
+        } else {
+            Ok(TestsStatus::Failure)
+        }
     }
 }

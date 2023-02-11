@@ -22,8 +22,8 @@ impl TrackedTestRunner {
 }
 
 impl Runner for TrackedTestRunner {
-    fn run(&self) -> Result<TestsStatus, RunnerErr> {
-        let res = self.runner.run();
+    fn run_all(&self) -> Result<TestsStatus, RunnerErr> {
+        let res = self.runner.run_all();
         self.tx.signal(());
         res
     }
@@ -58,7 +58,7 @@ impl WorkingTestRunner {
 }
 
 impl Runner for WorkingTestRunner {
-    fn run(&self) -> Result<TestsStatus, RunnerErr> {
+    fn run_all(&self) -> Result<TestsStatus, RunnerErr> {
         Ok(self.result.clone())
     }
 }
@@ -76,7 +76,7 @@ impl FailingTestRunner {
 }
 
 impl Runner for FailingTestRunner {
-    fn run(&self) -> Result<TestsStatus, RunnerErr> {
+    fn run_all(&self) -> Result<TestsStatus, RunnerErr> {
         Err(RunnerErr::Bus(BusErr::Generic(anyhow!("Failure"))))
     }
 }

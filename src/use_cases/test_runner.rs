@@ -3,7 +3,7 @@ use crate::result::RunnerErr;
 pub type TestRunner = Box<dyn Runner>;
 
 pub trait Runner: Send {
-    fn run(&self) -> Result<TestsStatus, RunnerErr>;
+    fn run_all(&self) -> Result<TestsStatus, RunnerErr>;
 }
 
 #[allow(unused)]
