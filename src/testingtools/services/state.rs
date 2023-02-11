@@ -190,7 +190,7 @@ impl AppStateReader for WorkingStateRead {
     }
 
     fn repo_root(&self) -> Result<RepoRoot, StateReaderErr> {
-        Ok(RepoRoot::new())
+        Ok(RepoRoot::default())
     }
 }
 

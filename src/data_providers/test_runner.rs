@@ -13,8 +13,9 @@ impl DefaultTestRunner {
 }
 
 impl Runner for DefaultTestRunner {
-    fn run_all(&self, _repo_root: RepoRoot) -> Result<TestsStatus, RunnerErr> {
-        if run_cmd!(cd ~/Projects/chester ; cargo test).is_ok() {
+    fn run_all(&self, repo_root: RepoRoot) -> Result<TestsStatus, RunnerErr> {
+        let repo_root = repo_root.to_string();
+        if run_cmd!(cd $repo_root ; cargo test).is_ok() {
             Ok(TestsStatus::Success)
         } else {
             Ok(TestsStatus::Failure)

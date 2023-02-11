@@ -18,7 +18,7 @@ pub struct InMemoryState {
 impl InMemoryState {
     pub fn make() -> State {
         let status = Arc::new(RwLock::new(TestsStatus::Pending));
-        let repo_root = Arc::new(RwLock::new(RepoRoot::new()));
+        let repo_root = Arc::new(RwLock::new(RepoRoot::default()));
         let state_reader = InMemoryStateRead::make(status.clone(), repo_root.clone());
         let state_writer = InMemoryStateWrite::make(status, repo_root);
         Box::new(Self {
