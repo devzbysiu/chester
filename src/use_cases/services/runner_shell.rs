@@ -1,5 +1,6 @@
 use crate::result::RunnerErr;
 use crate::use_cases::bus::{BusEvent, EventBus};
+use crate::use_cases::state::StateReader;
 use crate::use_cases::test_runner::{TestRunner, TestsStatus};
 
 use std::thread;
@@ -16,13 +17,13 @@ impl TestRunnerShell {
         Self { bus }
     }
 
-    pub fn run(self, test_runner: TestRunner) {
+    pub fn run(self, test_runner: TestRunner, state: StateReader) {
         let sub = self.bus.subscriber();
         let publ = self.bus.publisher();
         thread::spawn(move || -> Result<()> {
             loop {
                 if let Ok(BusEvent::ChangeDetected) = sub.recv() {
-                    if let Ok(TestsStatus::Success) = test_runner.run_all() {
+                    if let Ok(TestsStatus::Success) = test_runner.run_all(state.repo_root()?) {
                         debug!("tests passed");
                         publ.send(BusEvent::TestsPassed)?;
                     } else {
@@ -42,6 +43,7 @@ mod test {
     use super::*;
 
     use crate::configuration::tracing::init_tracing;
+    use crate::testingtools::services::state::noop;
     use crate::testingtools::services::test_runner::{failing, tracked, working};
     use crate::testingtools::unit::create_test_shim;
 
@@ -52,8 +54,9 @@ mod test {
         // given
         init_tracing();
         let (test_runner_spy, test_runner) = tracked(working(TestsStatus::Success));
+        let noop_state = noop();
         let shim = create_test_shim()?;
-        TestRunnerShell::new(shim.bus()).run(test_runner);
+        TestRunnerShell::new(shim.bus()).run(test_runner, noop_state.reader());
 
         // when
         shim.simulate_change()?;
@@ -69,8 +72,9 @@ mod test {
         // given
         init_tracing();
         let test_runner = working(TestsStatus::Success);
+        let noop_state = noop();
         let shim = create_test_shim()?;
-        TestRunnerShell::new(shim.bus()).run(test_runner);
+        TestRunnerShell::new(shim.bus()).run(test_runner, noop_state.reader());
 
         // when
         shim.simulate_change()?;
@@ -87,8 +91,9 @@ mod test {
         // given
         init_tracing();
         let test_runner = working(TestsStatus::Failure);
+        let noop_state = noop();
         let shim = create_test_shim()?;
-        TestRunnerShell::new(shim.bus()).run(test_runner);
+        TestRunnerShell::new(shim.bus()).run(test_runner, noop_state.reader());
 
         // when
         shim.simulate_change()?;
@@ -105,8 +110,9 @@ mod test {
         // given
         init_tracing();
         let test_runner = failing();
+        let noop_state = noop();
         let shim = create_test_shim()?;
-        TestRunnerShell::new(shim.bus()).run(test_runner);
+        TestRunnerShell::new(shim.bus()).run(test_runner, noop_state.reader());
 
         // when
         shim.simulate_change()?;

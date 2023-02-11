@@ -20,7 +20,7 @@ pub fn setup_shells(ctx: Context) -> StateReader {
     let sink_shell = ResultsSinkShell::new(bus.clone());
 
     watcher_shell.run(change_watcher);
-    runner_shell.run(test_runner);
+    runner_shell.run(test_runner, state.reader());
     sink_shell.run(state.writer());
 
     state.reader()

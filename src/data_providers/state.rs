@@ -4,9 +4,11 @@ use crate::use_cases::state::{
     AppState, AppStateReader, AppStateWriter, State, StateReader, StateWriter,
 };
 
+use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
 
 type StatusState = Arc<RwLock<TestsStatus>>;
+type RepoRootState = Arc<RwLock<PathBuf>>;
 
 pub struct InMemoryState {
     state_reader: StateReader,
@@ -16,8 +18,9 @@ pub struct InMemoryState {
 impl InMemoryState {
     pub fn make() -> State {
         let status = Arc::new(RwLock::new(TestsStatus::Pending));
-        let state_reader = InMemoryStateRead::make(status.clone());
-        let state_writer = InMemoryStateWrite::make(status);
+        let repo_root = Arc::new(RwLock::new(PathBuf::from("")));
+        let state_reader = InMemoryStateRead::make(status.clone(), repo_root.clone());
+        let state_writer = InMemoryStateWrite::make(status, repo_root);
         Box::new(Self {
             state_reader,
             state_writer,
@@ -37,11 +40,12 @@ impl AppState for InMemoryState {
 
 pub struct InMemoryStateRead {
     status: StatusState,
+    repo_root: RepoRootState,
 }
 
 impl InMemoryStateRead {
-    fn make(status: StatusState) -> StateReader {
-        Arc::new(Self { status })
+    fn make(status: StatusState, repo_root: RepoRootState) -> StateReader {
+        Arc::new(Self { status, repo_root })
     }
 }
 
@@ -50,15 +54,21 @@ impl AppStateReader for InMemoryStateRead {
         let status = self.status.read().expect("poisoned mutex");
         Ok(status.clone())
     }
+
+    fn repo_root(&self) -> Result<PathBuf, StateReaderErr> {
+        let repo_root = self.repo_root.read().expect("poisoned mutex");
+        Ok(repo_root.clone())
+    }
 }
 
 pub struct InMemoryStateWrite {
     status: StatusState,
+    repo_root: RepoRootState,
 }
 
 impl InMemoryStateWrite {
-    fn make(status: StatusState) -> StateWriter {
-        Arc::new(Self { status })
+    fn make(status: StatusState, repo_root: RepoRootState) -> StateWriter {
+        Arc::new(Self { status, repo_root })
     }
 }
 
@@ -66,6 +76,12 @@ impl AppStateWriter for InMemoryStateWrite {
     fn status(&self, new_status: TestsStatus) -> Result<(), StateWriterErr> {
         let mut status = self.status.write().expect("poisoned mutex");
         *status = new_status;
+        Ok(())
+    }
+
+    fn repo_root(&self, new_repo_root: PathBuf) -> Result<(), StateWriterErr> {
+        let mut repo_root = self.repo_root.write().expect("poisoned mutex");
+        *repo_root = new_repo_root;
         Ok(())
     }
 }

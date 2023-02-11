@@ -53,7 +53,7 @@ mod test {
         shim.ignore_event()?;
 
         // then
-        assert!(state_spy.write_called_with_val(&TestsStatus::Success));
+        assert!(state_spy.status_called_with_val(&TestsStatus::Success));
 
         Ok(())
     }
@@ -70,7 +70,7 @@ mod test {
         shim.ignore_event()?;
 
         // then
-        assert!(state_spy.write_called_with_val(&TestsStatus::Failure));
+        assert!(state_spy.status_called_with_val(&TestsStatus::Failure));
 
         Ok(())
     }
@@ -87,7 +87,7 @@ mod test {
         shim.ignore_event()?;
 
         // then
-        assert!(state_spy.write_called_with_val(&TestsStatus::Pending));
+        assert!(state_spy.status_called_with_val(&TestsStatus::Pending));
 
         Ok(())
     }

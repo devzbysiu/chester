@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use crate::result::{BusErr, RunnerErr};
 use crate::testingtools::{pipe, MutexExt, Spy, Tx};
 use crate::use_cases::test_runner::{Runner, TestRunner, TestsStatus};
@@ -22,8 +24,8 @@ impl TrackedTestRunner {
 }
 
 impl Runner for TrackedTestRunner {
-    fn run_all(&self) -> Result<TestsStatus, RunnerErr> {
-        let res = self.runner.run_all();
+    fn run_all(&self, repo_root: PathBuf) -> Result<TestsStatus, RunnerErr> {
+        let res = self.runner.run_all(repo_root);
         self.tx.signal(());
         res
     }
@@ -58,7 +60,7 @@ impl WorkingTestRunner {
 }
 
 impl Runner for WorkingTestRunner {
-    fn run_all(&self) -> Result<TestsStatus, RunnerErr> {
+    fn run_all(&self, _repo_root: PathBuf) -> Result<TestsStatus, RunnerErr> {
         Ok(self.result.clone())
     }
 }
@@ -76,7 +78,7 @@ impl FailingTestRunner {
 }
 
 impl Runner for FailingTestRunner {
-    fn run_all(&self) -> Result<TestsStatus, RunnerErr> {
+    fn run_all(&self, _repo_root: PathBuf) -> Result<TestsStatus, RunnerErr> {
         Err(RunnerErr::Bus(BusErr::Generic(anyhow!("Failure"))))
     }
 }

@@ -1,6 +1,7 @@
 use crate::entities::status::TestsStatus;
 use crate::result::{StateReaderErr, StateWriterErr};
 
+use std::path::PathBuf;
 use std::sync::Arc;
 
 pub type State = Box<dyn AppState>;
@@ -14,8 +15,10 @@ pub trait AppState: Send {
 
 pub trait AppStateReader: Sync + Send {
     fn status(&self) -> Result<TestsStatus, StateReaderErr>;
+    fn repo_root(&self) -> Result<PathBuf, StateReaderErr>;
 }
 
 pub trait AppStateWriter: Sync + Send {
     fn status(&self, status: TestsStatus) -> Result<(), StateWriterErr>;
+    fn repo_root(&self, repo_root: PathBuf) -> Result<(), StateWriterErr>;
 }

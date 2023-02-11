@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use cmd_lib::run_cmd;
 
 use crate::result::RunnerErr;
@@ -12,7 +14,7 @@ impl DefaultTestRunner {
 }
 
 impl Runner for DefaultTestRunner {
-    fn run_all(&self) -> Result<TestsStatus, RunnerErr> {
+    fn run_all(&self, _repo_root: PathBuf) -> Result<TestsStatus, RunnerErr> {
         if run_cmd!(cd ~/Projects/chester ; cargo test).is_ok() {
             Ok(TestsStatus::Success)
         } else {

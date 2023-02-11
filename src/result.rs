@@ -14,6 +14,9 @@ pub enum WatcherErr {
 pub enum RunnerErr {
     #[error("Error when using bus.")]
     Bus(#[from] BusErr),
+
+    #[error("Error when reading state.")]
+    Read(#[from] StateReaderErr),
 }
 
 #[derive(Debug, Error)]
