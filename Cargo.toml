@@ -35,6 +35,7 @@ dirs = "4.0.0"
 eventador = "0.0.18"
 hyper = "0.14.24"
 log = "0.4.11"
+notify = "5.1.0"
 once_cell = "1.17.0"
 serde = { version = "1.0.152", features = ["derive"] }
 thiserror = "1.0.38"

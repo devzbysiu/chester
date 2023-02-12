@@ -1,10 +1,12 @@
 #![allow(clippy::module_name_repetitions)]
 
+use crate::configuration::config::Config;
+use crate::configuration::factories::Context;
 use crate::configuration::tracing::init_tracing;
 use crate::data_providers::server::start_server;
+use crate::startup::setup_shells;
 
 use anyhow::Result;
-use configuration::factories::state;
 
 mod configuration;
 mod data_providers;
@@ -19,8 +21,8 @@ mod testingtools;
 #[actix_web::main]
 async fn main() -> Result<()> {
     init_tracing();
-    let state = state();
-    start_server(state.reader()).await?;
+    let reader = setup_shells(Context::new(Config::default())?);
+    start_server(reader).await?;
 
     Ok(())
 }

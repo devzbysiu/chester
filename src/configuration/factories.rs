@@ -22,7 +22,7 @@ pub struct Context {
 
 impl Context {
     #[allow(unused)]
-    fn new(cfg: Config) -> Result<Self, SetupErr> {
+    pub fn new(cfg: Config) -> Result<Self, SetupErr> {
         Ok(Self {
             cfg,
             bus: event_bus()?,

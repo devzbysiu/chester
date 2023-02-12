@@ -8,6 +8,12 @@ pub enum WatcherErr {
 
     #[error("Failed to receive event from watcher.")]
     Receive(#[from] std::sync::mpsc::RecvError),
+
+    #[error("Failed to watch for events.")]
+    FsWatcher(#[from] notify::Error),
+
+    #[error("Failed to receive event")]
+    Generic(#[from] anyhow::Error),
 }
 
 #[derive(Debug, Error)]
