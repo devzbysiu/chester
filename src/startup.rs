@@ -19,7 +19,7 @@ pub fn setup_shells(ctx: Context) -> StateReader {
     let runner_shell = TestRunnerShell::new(bus.clone());
     let sink_shell = ResultsSinkShell::new(bus.clone());
 
-    watcher_shell.run(change_watcher);
+    watcher_shell.run(change_watcher, state.reader());
     runner_shell.run(test_runner, state.reader());
     sink_shell.run(state.writer());
 

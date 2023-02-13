@@ -4,6 +4,7 @@ use crate::use_cases::bus::EventBus;
 use crate::use_cases::bus::EventPublisher;
 use crate::use_cases::change_watcher::Change;
 use crate::use_cases::change_watcher::ChangeWatcher;
+use crate::use_cases::state::StateReader;
 
 use log::debug;
 use std::thread;
@@ -19,10 +20,11 @@ impl ChangeWatcherShell {
         Self { bus }
     }
 
-    pub fn run(self, change_watcher: ChangeWatcher) {
+    pub fn run(self, change_watcher: ChangeWatcher, state: StateReader) {
         thread::spawn(move || -> Result<()> {
             loop {
-                if let Ok(Change::Any) = change_watcher.next_change() {
+                let repo_root = state.repo_root()?;
+                if let Ok(Change::Any) = change_watcher.next_change(repo_root) {
                     trigger_tests(&self.bus.publisher())?;
                 } else {
                     debug!("no change detected");
@@ -41,7 +43,9 @@ pub fn trigger_tests(publ: &EventPublisher) -> Result<()> {
 mod test {
     use super::*;
 
+    use crate::configuration::factories::state;
     use crate::configuration::tracing::init_tracing;
+    use crate::entities::repo_root::RepoRoot;
     use crate::testingtools::unit::create_test_shim;
     use crate::use_cases::change_watcher::Watcher;
 
@@ -54,7 +58,8 @@ mod test {
         init_tracing();
         let mut shim = create_test_shim()?;
         let change_watcher = MockChangeWatcher::make(shim.rx());
-        ChangeWatcherShell::new(shim.bus()).run(change_watcher);
+        let state = state();
+        ChangeWatcherShell::new(shim.bus()).run(change_watcher, state.reader());
 
         // when
         shim.trigger_watcher()?;
@@ -76,7 +81,7 @@ mod test {
     }
 
     impl Watcher for MockChangeWatcher {
-        fn next_change(&self) -> Result<Change, WatcherErr> {
+        fn next_change(&self, _repo_root: RepoRoot) -> Result<Change, WatcherErr> {
             Ok(self.rx.recv()?)
         }
     }

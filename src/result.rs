@@ -14,6 +14,9 @@ pub enum WatcherErr {
 
     #[error("Failed to receive event")]
     Generic(#[from] anyhow::Error),
+
+    #[error("Error when reading state.")]
+    Read(#[from] StateReaderErr),
 }
 
 #[derive(Debug, Error)]
@@ -53,6 +56,9 @@ pub enum SetupErr {
 
     #[error("Failed to read from state.")]
     Read(#[from] StateReaderErr),
+
+    #[error("Failed to create Watcher.")]
+    Watch(#[from] WatcherErr),
 }
 
 #[derive(Debug, Error)]
