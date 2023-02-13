@@ -2,7 +2,6 @@ use crate::entities::repo_root::RepoRoot;
 use crate::result::WatcherErr;
 use crate::use_cases::change_watcher::{Change, ChangeWatcher, Watcher};
 
-use anyhow::anyhow;
 use notify::{RecommendedWatcher, RecursiveMode};
 use notify_debouncer_mini::{new_debouncer, DebouncedEvent, Debouncer};
 use std::cell::RefCell;
@@ -29,8 +28,20 @@ impl DefaultChangeWatcher {
             repo_root,
         }))
     }
+
+    #[instrument(skip(self))]
+    fn update_watcher(&self, current_root: &RepoRoot) -> Result<(), WatcherErr> {
+        debug!("repo root changed, recreating watcher");
+        let (new_rx, new_watcher) = setup_watcher(current_root)?;
+        let mut rx = self.rx.borrow_mut();
+        let mut watcher = self.watcher.borrow_mut();
+        *rx = new_rx;
+        *watcher = new_watcher;
+        Ok(())
+    }
 }
 
+#[instrument(skip(path))]
 fn setup_watcher<P: AsRef<Path>>(path: P) -> Result<(Rx, Dbcr), WatcherErr> {
     let path = path.as_ref();
     let (tx, rx) = channel();
@@ -41,39 +52,36 @@ fn setup_watcher<P: AsRef<Path>>(path: P) -> Result<(Rx, Dbcr), WatcherErr> {
 
 impl Watcher for DefaultChangeWatcher {
     #[instrument(skip(self))]
-    fn next_change(&self, path: RepoRoot) -> Result<Change, WatcherErr> {
-        if self.repo_root != path {
-            debug!("repo root changed, recreating watcher");
-            let (new_rx, new_watcher) = setup_watcher(&path)?;
-            let mut rx = self.rx.borrow_mut();
-            let mut watcher = self.watcher.borrow_mut();
-            *rx = new_rx;
-            *watcher = new_watcher;
+    fn next_change(&self, current_root: RepoRoot) -> Result<Change, WatcherErr> {
+        if self.repo_root != current_root {
+            self.update_watcher(&current_root)?;
         }
         let rx = self.rx.borrow();
-        let events: Result<Vec<DebouncedEvent>, Vec<notify::Error>> = rx.recv()?;
-        let p = path.as_ref();
+        let events = rx.recv()?;
         match events {
-            Ok(events) => {
-                let mut valid_change = false;
-                for ev in events {
-                    let event_path = ev.path;
-                    if event_path.starts_with(p.join("target")) {
-                        trace!("ignored path: {event_path:?}");
-                    } else {
-                        debug!("valid path changed: {event_path:?}");
-                        valid_change = true;
-                        break;
-                    }
-                }
-                if valid_change {
-                    debug!("detected change");
-                    Ok(Change::Any)
-                } else {
-                    Ok(Change::No)
-                }
+            Ok(events) if change_detected(&current_root, &events) => Ok(Change::Any),
+            _ => {
+                debug!("no valid change detected");
+                Ok(Change::No)
             }
-            _ => Err(WatcherErr::Generic(anyhow!("Failed to receive event"))),
         }
     }
+}
+
+#[instrument(skip(events))]
+fn change_detected(repo_root: &RepoRoot, events: &[DebouncedEvent]) -> bool {
+    let mut valid_change = false;
+    let repo_root = repo_root.as_ref();
+    for ev in events {
+        let event_path = &ev.path;
+        if event_path.starts_with(repo_root.join("target")) {
+            trace!("ignored path: {event_path:?}");
+        } else {
+            debug!("change detected: {event_path:?}");
+            valid_change = true;
+            break;
+        }
+    }
+    debug!("changed: {}", if valid_change { "yes" } else { "no" });
+    valid_change
 }
