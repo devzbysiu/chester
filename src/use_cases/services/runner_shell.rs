@@ -4,7 +4,7 @@ use crate::use_cases::state::StateReader;
 use crate::use_cases::test_runner::{TestRunner, TestsStatus};
 
 use std::thread;
-use tracing::{debug, trace};
+use tracing::{debug, instrument, trace};
 
 type Result<T> = std::result::Result<T, RunnerErr>;
 
@@ -17,6 +17,7 @@ impl TestRunnerShell {
         Self { bus }
     }
 
+    #[instrument(skip(self, test_runner))]
     pub fn run(self, test_runner: TestRunner, state: StateReader) {
         let sub = self.bus.subscriber();
         let publ = self.bus.publisher();

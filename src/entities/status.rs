@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use serde::Serialize;
 
 #[derive(Serialize, Debug, Eq, PartialEq, Clone)]
@@ -8,12 +10,22 @@ pub enum TestsStatus {
     Success,
 }
 
-impl ToString for TestsStatus {
-    fn to_string(&self) -> String {
-        match self {
-            TestsStatus::Pending => "pending".into(),
-            TestsStatus::Failure => "failure".into(),
-            TestsStatus::Success => "success".into(),
-        }
+impl Display for TestsStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                TestsStatus::Pending => "pending",
+                TestsStatus::Failure => "failure",
+                TestsStatus::Success => "success",
+            }
+        )
+    }
+}
+
+impl Default for TestsStatus {
+    fn default() -> Self {
+        Self::Pending
     }
 }

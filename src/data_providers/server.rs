@@ -6,14 +6,17 @@ use actix_web::{get, middleware, web, App, HttpServer};
 use anyhow::anyhow;
 use serde::Serialize;
 use std::path::PathBuf;
+use tracing::{debug, instrument};
 use tracing_actix_web::TracingLogger;
 
 #[allow(clippy::unused_async)]
+#[instrument]
 #[get("/tests/status")]
 async fn status(state: web::Data<StateReader>) -> Result<web::Json<StatusResponse>, ServerErr> {
     let status = state
         .status()
         .map_err(|_| ServerErr::Generic(anyhow!("Error during exection.")))?;
+    debug!("responding with {status}");
     Ok(web::Json(StatusResponse::new(status)))
 }
 
@@ -28,6 +31,7 @@ impl StatusResponse {
     }
 }
 
+#[instrument]
 pub async fn start_server(state: StateReader) -> std::io::Result<()> {
     let socket_path = dirs::runtime_dir().unwrap_or(PathBuf::from("/run"));
     let socket_path = socket_path.join("chester.sock");

@@ -1,3 +1,5 @@
+use tracing::instrument;
+
 use crate::entities::repo_root::RepoRoot;
 use crate::entities::status::TestsStatus;
 use crate::result::{StateReaderErr, StateWriterErr};
@@ -18,7 +20,7 @@ pub struct InMemoryState {
 impl InMemoryState {
     pub fn make() -> State {
         let status = Arc::new(RwLock::new(TestsStatus::Pending));
-        let repo_root = Arc::new(RwLock::new(RepoRoot::default()));
+        let repo_root = Arc::new(RwLock::new(RepoRoot::new("/tmp/testest")));
         let state_reader = InMemoryStateRead::make(status.clone(), repo_root.clone());
         let state_writer = InMemoryStateWrite::make(status, repo_root);
         Box::new(Self {
@@ -38,6 +40,7 @@ impl AppState for InMemoryState {
     }
 }
 
+#[derive(Debug)]
 pub struct InMemoryStateRead {
     status: StatusState,
     repo_root: RepoRootState,
@@ -50,17 +53,20 @@ impl InMemoryStateRead {
 }
 
 impl AppStateReader for InMemoryStateRead {
+    #[instrument]
     fn status(&self) -> Result<TestsStatus, StateReaderErr> {
         let status = self.status.read().expect("poisoned mutex");
         Ok(status.clone())
     }
 
+    #[instrument]
     fn repo_root(&self) -> Result<RepoRoot, StateReaderErr> {
         let repo_root = self.repo_root.read().expect("poisoned mutex");
         Ok(repo_root.clone())
     }
 }
 
+#[derive(Debug)]
 pub struct InMemoryStateWrite {
     status: StatusState,
     repo_root: RepoRootState,
@@ -73,12 +79,14 @@ impl InMemoryStateWrite {
 }
 
 impl AppStateWriter for InMemoryStateWrite {
+    #[instrument]
     fn status(&self, new_status: TestsStatus) -> Result<(), StateWriterErr> {
         let mut status = self.status.write().expect("poisoned mutex");
         *status = new_status;
         Ok(())
     }
 
+    #[instrument]
     fn repo_root(&self, new_repo_root: RepoRoot) -> Result<(), StateWriterErr> {
         let mut repo_root = self.repo_root.write().expect("poisoned mutex");
         *repo_root = new_repo_root;

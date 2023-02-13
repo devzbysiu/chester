@@ -9,6 +9,6 @@ pub trait Watcher: Send {
 
 #[derive(Debug)]
 pub enum Change {
-    #[allow(unused)]
     Any,
+    No,
 }

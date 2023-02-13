@@ -6,8 +6,8 @@ use crate::use_cases::change_watcher::Change;
 use crate::use_cases::change_watcher::ChangeWatcher;
 use crate::use_cases::state::StateReader;
 
-use log::debug;
 use std::thread;
+use tracing::{debug, instrument, trace};
 
 type Result<T> = std::result::Result<T, WatcherErr>;
 
@@ -20,20 +20,23 @@ impl ChangeWatcherShell {
         Self { bus }
     }
 
+    #[instrument(skip(self, change_watcher))]
     pub fn run(self, change_watcher: ChangeWatcher, state: StateReader) {
         thread::spawn(move || -> Result<()> {
             loop {
                 let repo_root = state.repo_root()?;
                 if let Ok(Change::Any) = change_watcher.next_change(repo_root) {
+                    debug!("detected change, triggering tests");
                     trigger_tests(&self.bus.publisher())?;
                 } else {
-                    debug!("no change detected");
+                    trace!("no change detected");
                 }
             }
         });
     }
 }
 
+#[instrument(skip(publ))]
 pub fn trigger_tests(publ: &EventPublisher) -> Result<()> {
     publ.send(BusEvent::ChangeDetected)?;
     Ok(())

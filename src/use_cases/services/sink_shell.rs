@@ -4,7 +4,7 @@ use crate::use_cases::bus::{BusEvent, EventBus};
 use crate::use_cases::state::StateWriter;
 
 use std::thread;
-use tracing::error;
+use tracing::{debug, error, instrument};
 
 type Result<T> = std::result::Result<T, SinkErr>;
 
@@ -17,14 +17,17 @@ impl ResultsSinkShell {
         Self { bus }
     }
 
-    pub fn run(&self, state_writer: StateWriter) {
+    #[instrument(skip(self, state))]
+    pub fn run(&self, state: StateWriter) {
         let sub = self.bus.subscriber();
         thread::spawn(move || -> Result<()> {
             loop {
-                match sub.recv() {
-                    Ok(BusEvent::TestsPassed) => state_writer.status(TestsStatus::Success)?,
-                    Ok(BusEvent::TestsFailed) => state_writer.status(TestsStatus::Failure)?,
-                    Ok(BusEvent::ChangeDetected) => state_writer.status(TestsStatus::Pending)?,
+                let event = sub.recv();
+                debug!("received: {event:?}");
+                match event {
+                    Ok(BusEvent::TestsPassed) => state.status(TestsStatus::Success)?,
+                    Ok(BusEvent::TestsFailed) => state.status(TestsStatus::Failure)?,
+                    Ok(BusEvent::ChangeDetected) => state.status(TestsStatus::Pending)?,
                     Err(_) => error!("failed to recv bus event"),
                 }
             }
