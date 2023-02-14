@@ -19,8 +19,8 @@ pub struct InMemoryState {
 
 impl InMemoryState {
     pub fn make() -> State {
-        let status = Arc::new(RwLock::new(TestsStatus::Pending));
-        let repo_root = Arc::new(RwLock::new(RepoRoot::new("/tmp/testest")));
+        let status = Arc::new(RwLock::new(TestsStatus::default()));
+        let repo_root = Arc::new(RwLock::new(RepoRoot::default()));
         let state_reader = InMemoryStateRead::make(status.clone(), repo_root.clone());
         let state_writer = InMemoryStateWrite::make(status, repo_root);
         Box::new(Self {
@@ -103,7 +103,39 @@ mod test {
     use anyhow::Result;
 
     #[test]
-    fn what_is_written_to_state_can_be_read() -> Result<()> {
+    fn pending_status_is_set_as_default() -> Result<()> {
+        // given
+        init_tracing();
+        let state = InMemoryState::make();
+        let state = state.reader();
+
+        // when
+        let status = state.status()?;
+
+        // then
+        assert_eq!(status, TestsStatus::Pending);
+
+        Ok(())
+    }
+
+    #[test]
+    fn empty_root_is_set_as_default() -> Result<()> {
+        // given
+        init_tracing();
+        let state = InMemoryState::make();
+        let state = state.reader();
+
+        // when
+        let root = state.repo_root()?;
+
+        // then
+        assert_eq!(root, RepoRoot::new(""));
+
+        Ok(())
+    }
+
+    #[test]
+    fn status_written_to_state_can_be_read() -> Result<()> {
         // given
         init_tracing();
         let state = InMemoryState::make();
@@ -116,6 +148,24 @@ mod test {
 
         // then
         assert_eq!(state_reader.status()?, TestsStatus::Success);
+
+        Ok(())
+    }
+
+    #[test]
+    fn repo_root_written_to_state_can_be_read() -> Result<()> {
+        // given
+        init_tracing();
+        let state = InMemoryState::make();
+        let state_reader = state.reader();
+        let state_writer = state.writer();
+        assert_eq!(state_reader.repo_root()?, RepoRoot::default());
+
+        // when
+        state_writer.repo_root(RepoRoot::new("/some/path"))?;
+
+        // then
+        assert_eq!(state_reader.repo_root()?, RepoRoot::new("/some/path"));
 
         Ok(())
     }

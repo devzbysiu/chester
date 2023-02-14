@@ -7,6 +7,7 @@ pub struct RepoRoot {
 }
 
 impl RepoRoot {
+    #[allow(unused)]
     pub fn new<P: AsRef<Path>>(repo_root: P) -> Self {
         let root = repo_root.as_ref().to_path_buf();
         Self { root }
