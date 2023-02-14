@@ -8,7 +8,7 @@ pub trait Runner: Send {
 }
 
 #[allow(unused)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TestsStatus {
     Success,
     Failure,
