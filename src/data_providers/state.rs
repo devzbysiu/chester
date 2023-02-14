@@ -1,5 +1,3 @@
-use tracing::instrument;
-
 use crate::entities::repo_root::RepoRoot;
 use crate::entities::status::TestsStatus;
 use crate::result::{StateReaderErr, StateWriterErr};
@@ -8,6 +6,7 @@ use crate::use_cases::state::{
 };
 
 use std::sync::{Arc, RwLock};
+use tracing::instrument;
 
 type StatusState = Arc<RwLock<TestsStatus>>;
 type RepoRootState = Arc<RwLock<RepoRoot>>;
