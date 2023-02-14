@@ -5,7 +5,7 @@ use crate::use_cases::state::State;
 use crate::use_cases::state::{StateReader, StateWriter};
 
 use actix_web::web::{Data, Json};
-use actix_web::{get, middleware, post, App, HttpServer};
+use actix_web::{get, middleware, put, App, HttpResponse, HttpServer};
 use anyhow::anyhow;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -16,14 +16,18 @@ type Result<T> = std::result::Result<T, ServerErr>;
 type StateWriterData = Data<StateWriter>;
 type StateReaderData = Data<StateReader>;
 
-#[instrument(skip(state))]
+#[instrument]
 #[get("/tests/status")]
 async fn status(state: StateReaderData) -> Result<Json<StatusResp>> {
     let status = state
         .status()
-        .map_err(|_| ServerErr::Generic(anyhow!("Error while checking status.")))?;
+        .map_err(|_| server_err("Error while checking status."))?;
     debug!("responding with {status}");
     Ok(Json(StatusResp::new(status)))
+}
+
+fn server_err<S: Into<String>>(msg: S) -> ServerErr {
+    ServerErr::Generic(anyhow!(msg.into()))
 }
 
 #[derive(Debug, Serialize)]
@@ -38,13 +42,13 @@ impl StatusResp {
 }
 
 #[instrument(skip(state))]
-#[post("/repo/root")]
-async fn change_root(state: StateWriterData, req: Json<ChangeRootReq>) -> Result<String> {
-    debug!("changing repo root");
+#[put("/repo/root")]
+async fn change_root(state: StateWriterData, req: Json<ChangeRootReq>) -> Result<HttpResponse> {
+    debug!("changing repo root to: {}", req.repo_root);
     state
         .repo_root(req.repo_root.clone())
-        .map_err(|_| ServerErr::Generic(anyhow!("Error while changing repo root.")))?;
-    Ok("ok".into())
+        .map_err(|_| server_err("Error while changing repo root."))?;
+    Ok(HttpResponse::NoContent().into()) // 204
 }
 
 #[derive(Debug, Deserialize)]
