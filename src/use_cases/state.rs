@@ -5,11 +5,11 @@ use crate::result::{StateReaderErr, StateWriterErr};
 use std::fmt::Debug;
 use std::sync::Arc;
 
-pub type State = Box<dyn AppState>;
+pub type State = Arc<dyn AppState>;
 pub type StateReader = Arc<dyn AppStateReader>;
 pub type StateWriter = Arc<dyn AppStateWriter>;
 
-pub trait AppState: Send {
+pub trait AppState: Sync + Send {
     fn reader(&self) -> StateReader;
     fn writer(&self) -> StateWriter;
 }

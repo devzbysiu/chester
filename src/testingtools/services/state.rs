@@ -28,7 +28,7 @@ impl TrackedState {
 
         (
             StateSpies::new(read_status_spy, write_status_spy, write_repo_root_spy),
-            Box::new(Self {
+            Arc::new(Self {
                 read: TrackedStateRead::create(state.reader(), read_status_tx),
                 write: TrackedStateWrite::create(
                     state.writer(),
@@ -159,7 +159,7 @@ struct WorkingState {
 
 impl WorkingState {
     fn make() -> State {
-        Box::new(Self {
+        Arc::new(Self {
             read: WorkingStateRead::new(),
             write: WorkingStateWrite::new(),
         })

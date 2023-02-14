@@ -2,11 +2,11 @@ use crate::configuration::factories::Context;
 use crate::use_cases::services::runner_shell::TestRunnerShell;
 use crate::use_cases::services::sink_shell::ResultsSinkShell;
 use crate::use_cases::services::watcher_shell::ChangeWatcherShell;
-use crate::use_cases::state::StateReader;
+use crate::use_cases::state::State;
 
 #[allow(unused)]
 #[allow(clippy::needless_pass_by_value)]
-pub fn setup_shells(ctx: Context) -> StateReader {
+pub fn setup_shells(ctx: Context) -> State {
     let Context {
         cfg: _,
         bus,
@@ -23,5 +23,5 @@ pub fn setup_shells(ctx: Context) -> StateReader {
     runner_shell.run(test_runner, state.reader());
     sink_shell.run(state.writer());
 
-    state.reader()
+    state
 }

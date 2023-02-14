@@ -22,7 +22,7 @@ impl InMemoryState {
         let repo_root = Arc::new(RwLock::new(RepoRoot::default()));
         let state_reader = InMemoryStateRead::make(status.clone(), repo_root.clone());
         let state_writer = InMemoryStateWrite::make(status, repo_root);
-        Box::new(Self {
+        Arc::new(Self {
             state_reader,
             state_writer,
         })

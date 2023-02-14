@@ -1,7 +1,9 @@
 use std::fmt::Display;
 use std::path::{Path, PathBuf};
 
-#[derive(Debug, Default, Clone, Eq, PartialEq)]
+use serde::Deserialize;
+
+#[derive(Debug, Default, Clone, Eq, PartialEq, Deserialize)]
 pub struct RepoRoot {
     root: PathBuf,
 }
