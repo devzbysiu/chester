@@ -93,7 +93,8 @@ mod test {
     use crate::configuration::tracing::init_tracing;
 
     use anyhow::Result;
-    use std::{fs, thread};
+    use std::fs::{self, create_dir};
+    use std::thread;
     use tempfile::tempdir;
 
     #[test]
@@ -116,6 +117,56 @@ mod test {
 
         // then
         assert_eq!(change, Change::Any);
+
+        Ok(())
+    }
+
+    #[test]
+    fn change_in_ignored_file_is_not_detected() -> Result<()> {
+        // given
+        init_tracing();
+        let repo_dir = tempdir()?;
+        let repo_root = RepoRoot::new(&repo_dir);
+        let watcher = DefaultChangeWatcher::make(repo_root.clone())?;
+
+        // when
+        let (tx, rx) = channel();
+        thread::spawn(move || -> Result<()> {
+            let change = watcher.next_change(repo_root)?;
+            tx.send(change)?;
+            Ok(())
+        });
+        fs::write(repo_dir.path().join("target"), "some-content")?;
+        let change = rx.recv()?;
+
+        // then
+        assert_eq!(change, Change::No);
+
+        Ok(())
+    }
+
+    #[test]
+    fn change_in_ignored_dir_is_not_detected() -> Result<()> {
+        // given
+        init_tracing();
+        let repo_dir = tempdir()?;
+        let ignored_dir = repo_dir.path().join("target");
+        create_dir(&ignored_dir)?;
+        let repo_root = RepoRoot::new(&repo_dir);
+        let watcher = DefaultChangeWatcher::make(repo_root.clone())?;
+
+        // when
+        let (tx, rx) = channel();
+        thread::spawn(move || -> Result<()> {
+            let change = watcher.next_change(repo_root)?;
+            tx.send(change)?;
+            Ok(())
+        });
+        fs::write(ignored_dir.join("some-file"), "some-content")?;
+        let change = rx.recv()?;
+
+        // then
+        assert_eq!(change, Change::No);
 
         Ok(())
     }
