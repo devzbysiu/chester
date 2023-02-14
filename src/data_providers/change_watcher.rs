@@ -45,7 +45,7 @@ impl DefaultChangeWatcher {
 fn setup_watcher<P: AsRef<Path>>(path: P) -> Result<(Rx, Dbcr), WatcherErr> {
     let path = path.as_ref();
     let (tx, rx) = channel();
-    let mut debouncer = new_debouncer(Duration::from_secs(2), None, tx)?;
+    let mut debouncer = new_debouncer(Duration::from_millis(500), None, tx)?;
     debouncer.watcher().watch(path, RecursiveMode::Recursive)?;
     Ok((rx, debouncer))
 }
@@ -84,4 +84,39 @@ fn change_detected(repo_root: &RepoRoot, events: &[DebouncedEvent]) -> bool {
     }
     debug!("changed: {}", if valid_change { "yes" } else { "no" });
     valid_change
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    use crate::configuration::tracing::init_tracing;
+
+    use anyhow::Result;
+    use std::{fs, thread};
+    use tempfile::tempdir;
+
+    #[test]
+    fn write_to_file_is_detected_as_change() -> Result<()> {
+        // given
+        init_tracing();
+        let tmpdir = tempdir()?;
+        let repo_root = RepoRoot::new(&tmpdir);
+        let watcher = DefaultChangeWatcher::make(repo_root.clone())?;
+
+        // when
+        let (tx, rx) = channel();
+        thread::spawn(move || -> Result<()> {
+            let change = watcher.next_change(repo_root)?;
+            tx.send(change)?;
+            Ok(())
+        });
+        fs::write(tmpdir.path().join("test-file"), "some-content")?;
+        let change = rx.recv()?;
+
+        // then
+        assert_eq!(change, Change::Any);
+
+        Ok(())
+    }
 }

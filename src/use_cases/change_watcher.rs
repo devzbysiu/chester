@@ -7,7 +7,7 @@ pub trait Watcher: Send {
     fn next_change(&self, path: RepoRoot) -> Result<Change, WatcherErr>;
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Change {
     Any,
     No,
