@@ -1,9 +1,9 @@
+use serde::Deserialize;
 use std::fmt::Display;
 use std::path::{Path, PathBuf};
 
-use serde::Deserialize;
-
 #[derive(Debug, Default, Clone, Eq, PartialEq, Deserialize)]
+#[serde(transparent)]
 pub struct RepoRoot {
     root: PathBuf,
 }
