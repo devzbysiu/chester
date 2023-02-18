@@ -5,7 +5,7 @@ use crate::data_providers::state::InMemoryState;
 use crate::data_providers::test_runner::DefaultTestRunner;
 use crate::entities::repo_root::RepoRoot;
 use crate::result::{BusErr, SetupErr};
-use crate::use_cases::bus::EventBus;
+use crate::use_cases::bus::{EventBus, EventPublisher};
 use crate::use_cases::change_watcher::ChangeWatcher;
 use crate::use_cases::state::State;
 use crate::use_cases::test_runner::TestRunner;
@@ -22,12 +22,12 @@ pub struct Context {
 }
 
 impl Context {
-    #[allow(unused)]
     pub fn new(cfg: Config) -> Result<Self, SetupErr> {
-        let state = state();
+        let bus = event_bus()?;
+        let state = state(bus.publisher());
         Ok(Self {
             cfg,
-            bus: event_bus()?,
+            bus,
             change_watcher: change_watcher(state.reader().repo_root()?)?,
             test_runner: test_runner(),
             state,
@@ -47,6 +47,6 @@ fn test_runner() -> TestRunner {
     DefaultTestRunner::make()
 }
 
-pub fn state() -> State {
-    InMemoryState::make()
+pub fn state(publ: EventPublisher) -> State {
+    InMemoryState::make(publ)
 }

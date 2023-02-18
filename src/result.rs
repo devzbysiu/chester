@@ -65,7 +65,10 @@ pub enum SetupErr {
 pub enum StateReaderErr {}
 
 #[derive(Debug, Error)]
-pub enum StateWriterErr {}
+pub enum StateWriterErr {
+    #[error("Failed to send event.")]
+    Bus(#[from] BusErr),
+}
 
 #[derive(Debug, Error)]
 pub enum ServerErr {

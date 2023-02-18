@@ -46,7 +46,7 @@ pub fn trigger_tests(publ: &EventPublisher) -> Result<()> {
 mod test {
     use super::*;
 
-    use crate::configuration::factories::state;
+    use crate::configuration::factories::{event_bus, state};
     use crate::configuration::tracing::init_tracing;
     use crate::entities::repo_root::RepoRoot;
     use crate::testingtools::unit::create_test_shim;
@@ -61,7 +61,8 @@ mod test {
         init_tracing();
         let mut shim = create_test_shim()?;
         let change_watcher = MockChangeWatcher::make(shim.rx());
-        let state = state();
+        let bus = event_bus()?;
+        let state = state(bus.publisher());
         ChangeWatcherShell::new(shim.bus()).run(change_watcher, state.reader());
 
         // when

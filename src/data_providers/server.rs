@@ -9,7 +9,7 @@ use actix_web::{get, middleware, put, App, HttpResponse, HttpServer};
 use anyhow::anyhow;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
-use tracing::{debug, instrument};
+use tracing::{debug, instrument, trace};
 use tracing_actix_web::TracingLogger;
 
 type Result<T> = std::result::Result<T, ServerErr>;
@@ -37,13 +37,13 @@ pub async fn start_server(state: State) -> std::io::Result<()> {
     .await
 }
 
-#[instrument]
+#[instrument(level = "trace")]
 #[get("/tests/status")]
 async fn status(state: StateReaderData) -> Result<Json<StatusResp>> {
     let status = state
         .status()
         .map_err(|_| server_err("Error while checking status."))?;
-    debug!("responding with {status}");
+    trace!("responding with {status}");
     Ok(Json(StatusResp::new(status)))
 }
 

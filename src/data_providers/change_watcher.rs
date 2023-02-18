@@ -7,6 +7,7 @@ use notify_debouncer_mini::{new_debouncer, DebouncedEvent, Debouncer};
 use std::cell::RefCell;
 use std::path::Path;
 use std::sync::mpsc::{channel, Receiver};
+use std::thread;
 use std::time::Duration;
 use tracing::{debug, instrument, trace};
 
@@ -16,7 +17,7 @@ type Dbcr = Debouncer<RecommendedWatcher>;
 pub struct DefaultChangeWatcher {
     rx: RefCell<Rx>,
     watcher: RefCell<Dbcr>,
-    repo_root: RepoRoot,
+    repo_root: RefCell<RepoRoot>,
 }
 
 impl DefaultChangeWatcher {
@@ -25,18 +26,22 @@ impl DefaultChangeWatcher {
         Ok(Box::new(Self {
             rx: RefCell::new(rx),
             watcher: RefCell::new(watcher),
-            repo_root,
+            repo_root: RefCell::new(repo_root),
         }))
     }
 
     #[instrument(skip(self))]
-    fn update_watcher(&self, current_root: &RepoRoot) -> Result<(), WatcherErr> {
+    fn update_watcher(&self, current_root: RepoRoot) -> Result<(), WatcherErr> {
         debug!("repo root changed, recreating watcher");
-        let (new_rx, new_watcher) = setup_watcher(current_root)?;
+        let (new_rx, new_watcher) = setup_watcher(&current_root)?;
         let mut rx = self.rx.borrow_mut();
         let mut watcher = self.watcher.borrow_mut();
+        let mut repo_root = self.repo_root.borrow_mut();
+
         *rx = new_rx;
         *watcher = new_watcher;
+        *repo_root = current_root;
+
         Ok(())
     }
 }
@@ -51,24 +56,24 @@ fn setup_watcher<P: AsRef<Path>>(path: P) -> Result<(Rx, Dbcr), WatcherErr> {
 }
 
 impl Watcher for DefaultChangeWatcher {
-    #[instrument(skip(self))]
+    #[instrument(level = "trace", skip(self))]
     fn next_change(&self, current_root: RepoRoot) -> Result<Change, WatcherErr> {
-        if self.repo_root != current_root {
-            self.update_watcher(&current_root)?;
+        if *self.repo_root.borrow() != current_root {
+            self.update_watcher(current_root.clone())?;
         }
         let rx = self.rx.borrow();
-        let events = rx.recv()?;
-        match events {
-            Ok(events) if change_detected(&current_root, &events) => Ok(Change::Any),
+        thread::sleep(Duration::from_secs(3));
+        match rx.try_recv() {
+            Ok(Ok(events)) if change_detected(&current_root, &events) => Ok(Change::Any),
             _ => {
-                debug!("no valid change detected");
+                trace!("no valid change detected");
                 Ok(Change::No)
             }
         }
     }
 }
 
-#[instrument(skip(events))]
+#[instrument(level = "trace", skip(events))]
 fn change_detected(repo_root: &RepoRoot, events: &[DebouncedEvent]) -> bool {
     let mut valid_change = false;
     let repo_root = repo_root.as_ref();
@@ -77,12 +82,12 @@ fn change_detected(repo_root: &RepoRoot, events: &[DebouncedEvent]) -> bool {
         if event_path.starts_with(repo_root.join("target")) {
             trace!("ignored path: {event_path:?}");
         } else {
-            debug!("change detected: {event_path:?}");
+            trace!("change detected: {event_path:?}");
             valid_change = true;
             break;
         }
     }
-    debug!("changed: {}", if valid_change { "yes" } else { "no" });
+    trace!("changed: {}", if valid_change { "yes" } else { "no" });
     valid_change
 }
 

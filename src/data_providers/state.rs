@@ -1,6 +1,7 @@
 use crate::entities::repo_root::RepoRoot;
 use crate::entities::status::TestsStatus;
 use crate::result::{StateReaderErr, StateWriterErr};
+use crate::use_cases::bus::{BusEvent, EventPublisher};
 use crate::use_cases::state::{
     AppState, AppStateReader, AppStateWriter, State, StateReader, StateWriter,
 };
@@ -12,30 +13,27 @@ type StatusState = Arc<RwLock<TestsStatus>>;
 type RepoRootState = Arc<RwLock<RepoRoot>>;
 
 pub struct InMemoryState {
-    state_reader: StateReader,
-    state_writer: StateWriter,
+    reader: StateReader,
+    writer: StateWriter,
 }
 
 impl InMemoryState {
-    pub fn make() -> State {
+    pub fn make(publ: EventPublisher) -> State {
         let status = Arc::new(RwLock::new(TestsStatus::default()));
         let repo_root = Arc::new(RwLock::new(RepoRoot::default()));
-        let state_reader = InMemoryStateRead::make(status.clone(), repo_root.clone());
-        let state_writer = InMemoryStateWrite::make(status, repo_root);
-        Arc::new(Self {
-            state_reader,
-            state_writer,
-        })
+        let reader = InMemoryStateRead::make(status.clone(), repo_root.clone());
+        let writer = InMemoryStateWrite::make(status, repo_root, publ);
+        Arc::new(Self { reader, writer })
     }
 }
 
 impl AppState for InMemoryState {
     fn reader(&self) -> StateReader {
-        self.state_reader.clone()
+        self.reader.clone()
     }
 
     fn writer(&self) -> StateWriter {
-        self.state_writer.clone()
+        self.writer.clone()
     }
 }
 
@@ -52,43 +50,48 @@ impl InMemoryStateRead {
 }
 
 impl AppStateReader for InMemoryStateRead {
-    #[instrument]
+    #[instrument(level = "trace")]
     fn status(&self) -> Result<TestsStatus, StateReaderErr> {
         let status = self.status.read().expect("poisoned mutex");
         Ok(status.clone())
     }
 
-    #[instrument]
+    #[instrument(level = "trace")]
     fn repo_root(&self) -> Result<RepoRoot, StateReaderErr> {
         let repo_root = self.repo_root.read().expect("poisoned mutex");
         Ok(repo_root.clone())
     }
 }
 
-#[derive(Debug)]
 pub struct InMemoryStateWrite {
     status: StatusState,
     repo_root: RepoRootState,
+    publ: EventPublisher,
 }
 
 impl InMemoryStateWrite {
-    fn make(status: StatusState, repo_root: RepoRootState) -> StateWriter {
-        Arc::new(Self { status, repo_root })
+    fn make(status: StatusState, repo_root: RepoRootState, publ: EventPublisher) -> StateWriter {
+        Arc::new(Self {
+            status,
+            repo_root,
+            publ,
+        })
     }
 }
 
 impl AppStateWriter for InMemoryStateWrite {
-    #[instrument]
+    #[instrument(level = "trace", skip(self))]
     fn status(&self, new_status: TestsStatus) -> Result<(), StateWriterErr> {
         let mut status = self.status.write().expect("poisoned mutex");
         *status = new_status;
         Ok(())
     }
 
-    #[instrument]
+    #[instrument(level = "trace", skip(self))]
     fn repo_root(&self, new_repo_root: RepoRoot) -> Result<(), StateWriterErr> {
         let mut repo_root = self.repo_root.write().expect("poisoned mutex");
         *repo_root = new_repo_root;
+        self.publ.send(BusEvent::ChangeDetected)?;
         Ok(())
     }
 }
@@ -97,6 +100,7 @@ impl AppStateWriter for InMemoryStateWrite {
 mod test {
     use super::*;
 
+    use crate::configuration::factories::event_bus;
     use crate::configuration::tracing::init_tracing;
 
     use anyhow::Result;
@@ -105,7 +109,8 @@ mod test {
     fn pending_status_is_set_as_default() -> Result<()> {
         // given
         init_tracing();
-        let state = InMemoryState::make();
+        let bus = event_bus()?;
+        let state = InMemoryState::make(bus.publisher());
         let state = state.reader();
 
         // when
@@ -121,7 +126,8 @@ mod test {
     fn empty_root_is_set_as_default() -> Result<()> {
         // given
         init_tracing();
-        let state = InMemoryState::make();
+        let bus = event_bus()?;
+        let state = InMemoryState::make(bus.publisher());
         let state = state.reader();
 
         // when
@@ -137,7 +143,8 @@ mod test {
     fn status_written_to_state_can_be_read() -> Result<()> {
         // given
         init_tracing();
-        let state = InMemoryState::make();
+        let bus = event_bus()?;
+        let state = InMemoryState::make(bus.publisher());
         let state_reader = state.reader();
         let state_writer = state.writer();
         assert_eq!(state_reader.status()?, TestsStatus::Pending);
@@ -155,7 +162,8 @@ mod test {
     fn repo_root_written_to_state_can_be_read() -> Result<()> {
         // given
         init_tracing();
-        let state = InMemoryState::make();
+        let bus = event_bus()?;
+        let state = InMemoryState::make(bus.publisher());
         let state_reader = state.reader();
         let state_writer = state.writer();
         assert_eq!(state_reader.repo_root()?, RepoRoot::default());

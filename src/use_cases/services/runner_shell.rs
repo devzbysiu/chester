@@ -24,6 +24,7 @@ impl TestRunnerShell {
         thread::spawn(move || -> Result<()> {
             loop {
                 if let Ok(BusEvent::ChangeDetected) = sub.recv() {
+                    debug!("running tests");
                     if let Ok(TestsStatus::Success) = test_runner.run_all(state.repo_root()?) {
                         debug!("tests passed");
                         publ.send(BusEvent::TestsPassed)?;
