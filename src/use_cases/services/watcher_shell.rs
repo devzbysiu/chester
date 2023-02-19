@@ -2,12 +2,11 @@ use crate::result::WatcherErr;
 use crate::use_cases::bus::BusEvent;
 use crate::use_cases::bus::EventBus;
 use crate::use_cases::bus::EventPublisher;
-use crate::use_cases::change_watcher::Change;
 use crate::use_cases::change_watcher::ChangeWatcher;
 use crate::use_cases::state::StateReader;
 
 use std::thread;
-use tracing::{debug, instrument, trace};
+use tracing::{debug, instrument};
 
 type Result<T> = std::result::Result<T, WatcherErr>;
 
@@ -24,13 +23,9 @@ impl ChangeWatcherShell {
     pub fn run(self, change_watcher: ChangeWatcher, state: StateReader) {
         thread::spawn(move || -> Result<()> {
             loop {
-                let repo_root = state.repo_root()?;
-                if let Ok(Change::Any) = change_watcher.next_change(repo_root) {
-                    debug!("detected change, triggering tests");
-                    trigger_tests(&self.bus.publisher())?;
-                } else {
-                    trace!("no change detected");
-                }
+                change_watcher.wait_for_change(state.repo_root()?)?;
+                debug!("detected change, triggering tests");
+                trigger_tests(&self.bus.publisher())?;
             }
         });
     }
@@ -75,17 +70,17 @@ mod test {
     }
 
     pub struct MockChangeWatcher {
-        rx: Receiver<Change>,
+        rx: Receiver<()>,
     }
 
     impl MockChangeWatcher {
-        fn make(rx: Receiver<Change>) -> ChangeWatcher {
+        fn make(rx: Receiver<()>) -> ChangeWatcher {
             Box::new(Self { rx })
         }
     }
 
     impl Watcher for MockChangeWatcher {
-        fn next_change(&self, _repo_root: RepoRoot) -> Result<Change, WatcherErr> {
+        fn wait_for_change(&self, _repo_root: RepoRoot) -> Result<(), WatcherErr> {
             Ok(self.rx.recv()?)
         }
     }

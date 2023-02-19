@@ -1,6 +1,5 @@
 use crate::configuration::factories::event_bus;
 use crate::use_cases::bus::{BusEvent, EventBus, EventPublisher, EventSubscriber};
-use crate::use_cases::change_watcher::Change;
 
 use anyhow::Result;
 use std::sync::mpsc::{channel, Receiver, Sender, TryRecvError};
@@ -23,8 +22,8 @@ pub fn create_test_shim() -> Result<TestShim> {
 }
 
 pub struct TestShim {
-    rx: Option<Receiver<Change>>,
-    tx: Sender<Change>,
+    rx: Option<Receiver<()>>,
+    tx: Sender<()>,
     bus: EventBus,
     sub: EventSubscriber,
     publ: EventPublisher,
@@ -32,7 +31,7 @@ pub struct TestShim {
 
 impl TestShim {
     pub fn trigger_watcher(&self) -> Result<()> {
-        self.tx.send(Change::Any)?;
+        self.tx.send(())?;
         Ok(())
     }
 
@@ -55,7 +54,7 @@ impl TestShim {
         self.bus.clone()
     }
 
-    pub fn rx(&mut self) -> Receiver<Change> {
+    pub fn rx(&mut self) -> Receiver<()> {
         self.rx.take().unwrap()
     }
 

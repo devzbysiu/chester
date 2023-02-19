@@ -1,13 +1,12 @@
 use crate::entities::repo_root::RepoRoot;
 use crate::result::WatcherErr;
-use crate::use_cases::change_watcher::{Change, ChangeWatcher, Watcher};
+use crate::use_cases::change_watcher::{ChangeWatcher, Watcher};
 
 use notify::{RecommendedWatcher, RecursiveMode};
 use notify_debouncer_mini::{new_debouncer, DebouncedEvent, Debouncer};
 use std::cell::RefCell;
 use std::path::Path;
 use std::sync::mpsc::{channel, Receiver};
-use std::thread;
 use std::time::Duration;
 use tracing::{debug, instrument, trace};
 
@@ -57,24 +56,22 @@ fn setup_watcher<P: AsRef<Path>>(path: P) -> Result<(Rx, Dbcr), WatcherErr> {
 
 impl Watcher for DefaultChangeWatcher {
     #[instrument(level = "trace", skip(self))]
-    fn next_change(&self, current_root: RepoRoot) -> Result<Change, WatcherErr> {
+    fn wait_for_change(&self, current_root: RepoRoot) -> Result<(), WatcherErr> {
         if *self.repo_root.borrow() != current_root {
             self.update_watcher(current_root.clone())?;
         }
         let rx = self.rx.borrow();
-        thread::sleep(Duration::from_secs(3));
-        match rx.try_recv() {
-            Ok(Ok(events)) if change_detected(&current_root, &events) => Ok(Change::Any),
-            _ => {
-                trace!("no valid change detected");
-                Ok(Change::No)
+        loop {
+            match rx.recv() {
+                Ok(Ok(events)) if change_is_valid(&current_root, &events) => return Ok(()),
+                _ => trace!("no valid change detected"),
             }
         }
     }
 }
 
 #[instrument(level = "trace", skip(events))]
-fn change_detected(repo_root: &RepoRoot, events: &[DebouncedEvent]) -> bool {
+fn change_is_valid(repo_root: &RepoRoot, events: &[DebouncedEvent]) -> bool {
     let mut valid_change = false;
     let repo_root = repo_root.as_ref();
     for ev in events {
@@ -113,15 +110,14 @@ mod test {
         // when
         let (tx, rx) = channel();
         thread::spawn(move || -> Result<()> {
-            let change = watcher.next_change(repo_root)?;
-            tx.send(change)?;
+            watcher.wait_for_change(repo_root)?;
+            tx.send(())?;
             Ok(())
         });
         fs::write(tmpdir.path().join("test-file"), "some-content")?;
-        let change = rx.recv()?;
 
         // then
-        assert_eq!(change, Change::Any);
+        assert!(rx.recv().is_ok());
 
         Ok(())
     }
@@ -137,15 +133,14 @@ mod test {
         // when
         let (tx, rx) = channel();
         thread::spawn(move || -> Result<()> {
-            let change = watcher.next_change(repo_root)?;
-            tx.send(change)?;
+            watcher.wait_for_change(repo_root)?;
+            tx.send(())?;
             Ok(())
         });
         fs::write(repo_dir.path().join("target"), "some-content")?;
-        let change = rx.recv()?;
 
         // then
-        assert_eq!(change, Change::No);
+        assert!(rx.recv_timeout(Duration::from_millis(500)).is_err());
 
         Ok(())
     }
@@ -163,15 +158,14 @@ mod test {
         // when
         let (tx, rx) = channel();
         thread::spawn(move || -> Result<()> {
-            let change = watcher.next_change(repo_root)?;
-            tx.send(change)?;
+            watcher.wait_for_change(repo_root)?;
+            tx.send(())?;
             Ok(())
         });
         fs::write(ignored_dir.join("some-file"), "some-content")?;
-        let change = rx.recv()?;
 
         // then
-        assert_eq!(change, Change::No);
+        assert!(rx.recv_timeout(Duration::from_millis(500)).is_err());
 
         Ok(())
     }
