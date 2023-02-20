@@ -26,9 +26,9 @@ impl Context {
         let bus = event_bus()?;
         let state = state(bus.publisher());
         Ok(Self {
-            cfg,
+            cfg: cfg.clone(),
             bus,
-            change_watcher: change_watcher(state.reader().repo_root()?)?,
+            change_watcher: change_watcher(state.reader().repo_root()?, cfg)?,
             test_runner: test_runner(),
             state,
         })
@@ -39,8 +39,8 @@ pub fn event_bus() -> Result<EventBus, BusErr> {
     Ok(Arc::new(LocalBus::new()?))
 }
 
-fn change_watcher(repo_root: RepoRoot) -> Result<ChangeWatcher, SetupErr> {
-    Ok(DefaultChangeWatcher::make(repo_root)?)
+fn change_watcher(repo_root: RepoRoot, cfg: Config) -> Result<ChangeWatcher, SetupErr> {
+    Ok(DefaultChangeWatcher::make(repo_root, cfg)?)
 }
 
 fn test_runner() -> TestRunner {
