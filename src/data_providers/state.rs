@@ -176,4 +176,22 @@ mod test {
 
         Ok(())
     }
+
+    #[test]
+    fn change_in_repo_root_publishes_change_detected_message() -> Result<()> {
+        // given
+        init_tracing();
+        let bus = event_bus()?;
+        let sub = bus.subscriber();
+        let state = InMemoryState::make(bus.publisher());
+        let state_writer = state.writer();
+
+        // when
+        state_writer.repo_root(RepoRoot::new("/some/path"))?;
+
+        // then
+        assert_eq!(sub.recv()?, BusEvent::ChangeDetected);
+
+        Ok(())
+    }
 }
