@@ -34,6 +34,8 @@ impl Default for TestsStatus {
 mod test {
     use super::*;
 
+    use tracing::debug;
+
     use crate::configuration::tracing::init_tracing;
 
     #[test]
@@ -44,5 +46,19 @@ mod test {
 
         // then
         assert_eq!(status, TestsStatus::Pending);
+    }
+
+    #[test]
+    fn tests_status_has_display_trait_implemented() {
+        // given
+        init_tracing();
+
+        // then
+        test_debug_trait(TestsStatus::Pending);
+    }
+
+    #[allow(clippy::needless_pass_by_value)]
+    fn test_debug_trait(arg: TestsStatus) {
+        debug!("{arg}");
     }
 }
