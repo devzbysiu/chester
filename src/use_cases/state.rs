@@ -36,10 +36,9 @@ pub trait AppStateWriter: Sync + Send {
 mod test {
     use super::*;
 
-    use crate::configuration::tracing::init_tracing;
-
-    use anyhow::Result;
     use tracing::debug;
+
+    use crate::configuration::tracing::init_tracing;
 
     #[test]
     fn app_state_reader_has_debug_implemented() {
