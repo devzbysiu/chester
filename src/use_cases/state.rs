@@ -31,3 +31,38 @@ pub trait AppStateWriter: Sync + Send {
     fn status(&self, status: TestsStatus) -> Result<(), StateWriterErr>;
     fn repo_root(&self, repo_root: RepoRoot) -> Result<(), StateWriterErr>;
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    use crate::configuration::tracing::init_tracing;
+
+    use anyhow::Result;
+    use tracing::debug;
+
+    #[test]
+    fn app_state_reader_has_debug_implemented() {
+        // given
+        init_tracing();
+
+        test_debug_trait(Box::new(NoOpStateReader));
+    }
+
+    #[allow(clippy::needless_pass_by_value)]
+    fn test_debug_trait(arg: Box<dyn AppStateReader>) {
+        debug!("{arg:?}");
+    }
+
+    struct NoOpStateReader;
+
+    impl AppStateReader for NoOpStateReader {
+        fn status(&self) -> Result<TestsStatus, StateReaderErr> {
+            unimplemented!()
+        }
+
+        fn repo_root(&self) -> Result<RepoRoot, StateReaderErr> {
+            unimplemented!()
+        }
+    }
+}
