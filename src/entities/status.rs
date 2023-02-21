@@ -34,14 +34,14 @@ impl Default for TestsStatus {
 mod test {
     use super::*;
 
-    use tracing::debug;
-
     use crate::configuration::tracing::init_tracing;
 
     #[test]
     fn default_status_is_pending() {
         // given
         init_tracing();
+
+        // when
         let status = TestsStatus::default();
 
         // then
@@ -54,11 +54,8 @@ mod test {
         init_tracing();
 
         // then
-        test_debug_trait(TestsStatus::Pending);
-    }
-
-    #[allow(clippy::needless_pass_by_value)]
-    fn test_debug_trait(arg: TestsStatus) {
-        debug!("{arg}");
+        assert_eq!(TestsStatus::Pending.to_string(), "pending");
+        assert_eq!(TestsStatus::Failure.to_string(), "failure");
+        assert_eq!(TestsStatus::Success.to_string(), "success");
     }
 }

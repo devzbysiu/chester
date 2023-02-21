@@ -36,33 +36,35 @@ pub trait AppStateWriter: Sync + Send {
 mod test {
     use super::*;
 
-    use tracing::debug;
-
     use crate::configuration::tracing::init_tracing;
 
     #[test]
     fn app_state_reader_has_debug_implemented() {
         // given
         init_tracing();
+        let state = Box::new(NoOpStateReader);
+
+        // when
+        let res = to_string(state);
 
         // then
-        test_debug_trait(Box::new(NoOpStateReader));
+        assert_eq!(res, "status: pending, repo_root: /some/path");
     }
 
     #[allow(clippy::needless_pass_by_value)]
-    fn test_debug_trait(arg: Box<dyn AppStateReader>) {
-        debug!("{arg:?}");
+    fn to_string(arg: Box<dyn AppStateReader>) -> String {
+        format!("{arg:?}")
     }
 
     struct NoOpStateReader;
 
     impl AppStateReader for NoOpStateReader {
         fn status(&self) -> Result<TestsStatus, StateReaderErr> {
-            unimplemented!()
+            Ok(TestsStatus::Pending)
         }
 
         fn repo_root(&self) -> Result<RepoRoot, StateReaderErr> {
-            unimplemented!()
+            Ok(RepoRoot::new("/some/path"))
         }
     }
 }
