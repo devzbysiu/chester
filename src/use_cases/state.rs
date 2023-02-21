@@ -46,6 +46,7 @@ mod test {
         // given
         init_tracing();
 
+        // then
         test_debug_trait(Box::new(NoOpStateReader));
     }
 

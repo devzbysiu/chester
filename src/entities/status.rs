@@ -29,3 +29,20 @@ impl Default for TestsStatus {
         Self::Pending
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    use crate::configuration::tracing::init_tracing;
+
+    #[test]
+    fn default_status_is_pending() {
+        // given
+        init_tracing();
+        let status = TestsStatus::default();
+
+        // then
+        assert_eq!(status, TestsStatus::Pending);
+    }
+}
