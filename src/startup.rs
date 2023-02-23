@@ -1,4 +1,4 @@
-use crate::configuration::factories::Context;
+use crate::configuration::factories::Runtime;
 use crate::use_cases::services::runner_shell::TestRunnerShell;
 use crate::use_cases::services::sink_shell::ResultsSinkShell;
 use crate::use_cases::services::watcher_shell::ChangeWatcherShell;
@@ -6,8 +6,8 @@ use crate::use_cases::state::State;
 
 #[allow(unused)]
 #[allow(clippy::needless_pass_by_value)]
-pub fn setup_shells(ctx: Context) -> State {
-    let Context {
+pub fn setup_shells(ctx: Runtime) -> State {
+    let Runtime {
         cfg: _,
         bus,
         change_watcher,

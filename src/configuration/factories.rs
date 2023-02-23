@@ -12,8 +12,7 @@ use crate::use_cases::test_runner::TestRunner;
 
 use std::sync::Arc;
 
-#[allow(unused)]
-pub struct Context {
+pub struct Runtime {
     pub cfg: Config,
     pub bus: EventBus,
     pub change_watcher: ChangeWatcher,
@@ -21,7 +20,7 @@ pub struct Context {
     pub state: State,
 }
 
-impl Context {
+impl Runtime {
     pub fn new(cfg: Config) -> Result<Self, SetupErr> {
         let bus = event_bus()?;
         let state = state(bus.publisher());
