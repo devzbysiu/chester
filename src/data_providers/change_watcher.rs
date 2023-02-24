@@ -49,7 +49,9 @@ impl DefaultChangeWatcher {
 
     #[instrument(level = "trace", skip(self, events))]
     fn change_is_valid(&self, repo_root: &RepoRoot, events: &[DebouncedEvent]) -> bool {
-        let mut valid_change = false;
+        if self.cfg.ignored_paths.is_empty() {
+            return true;
+        }
         let repo_root = repo_root.as_ref();
         let ignored_paths = &self.cfg.ignored_paths;
         for ev in events {
@@ -62,12 +64,9 @@ impl DefaultChangeWatcher {
                 continue;
             }
             trace!("change detected: {event_path:?}");
-            valid_change = true;
-            break;
+            return true;
         }
-        valid_change |= ignored_paths.is_empty();
-        trace!("changed: {}", if valid_change { "yes" } else { "no" });
-        valid_change
+        false
     }
 }
 
