@@ -209,4 +209,29 @@ mod test {
 
         Ok(())
     }
+
+    #[test]
+    fn regex_is_accepted_in_ignored_path() -> Result<()> {
+        // given
+        init_tracing();
+        let repo_dir = tempdir()?;
+        let repo_root = RepoRoot::new(&repo_dir);
+        let ignored_paths = vec![IgnoredPath::new(".*123.*456")?];
+        let cfg = Config { ignored_paths };
+        let watcher = DefaultChangeWatcher::make(repo_root.clone(), cfg)?;
+
+        // when
+        let (tx, rx) = channel();
+        thread::spawn(move || -> Result<()> {
+            watcher.wait_for_change(repo_root)?;
+            tx.send(())?;
+            Ok(())
+        });
+        fs::write(repo_dir.path().join("123something456"), "some-content")?;
+
+        // then
+        assert!(rx.recv_timeout(Duration::from_millis(1000)).is_err());
+
+        Ok(())
+    }
 }
