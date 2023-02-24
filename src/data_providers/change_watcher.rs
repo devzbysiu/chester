@@ -48,18 +48,14 @@ impl DefaultChangeWatcher {
     }
 
     #[instrument(level = "trace", skip(self, events))]
-    fn change_is_valid(&self, repo_root: &RepoRoot, events: &[DebouncedEvent]) -> bool {
+    fn change_is_valid(&self, events: &[DebouncedEvent]) -> bool {
         if self.cfg.ignored_paths.is_empty() {
             return true;
         }
-        let repo_root = repo_root.as_ref();
         let ignored_paths = &self.cfg.ignored_paths;
         for ev in events {
             let event_path = &ev.path;
-            if ignored_paths
-                .iter()
-                .any(|p| event_path.starts_with(repo_root.join(p)))
-            {
+            if ignored_paths.iter().any(|p| p.matched_by(event_path)) {
                 trace!("ignored path: {event_path:?}");
                 continue;
             }
@@ -83,12 +79,12 @@ impl Watcher for DefaultChangeWatcher {
     #[instrument(level = "trace", skip(self))]
     fn wait_for_change(&self, current_root: RepoRoot) -> Result<(), WatcherErr> {
         if *self.repo_root.borrow() != current_root {
-            self.update_watcher(current_root.clone())?;
+            self.update_watcher(current_root)?;
         }
         let rx = self.rx.borrow();
         loop {
             match rx.recv() {
-                Ok(Ok(events)) if self.change_is_valid(&current_root, &events) => return Ok(()),
+                Ok(Ok(events)) if self.change_is_valid(&events) => return Ok(()),
                 _ => trace!("no valid change detected"),
             }
         }
@@ -136,8 +132,8 @@ mod test {
         init_tracing();
         let repo_dir = tempdir()?;
         let repo_root = RepoRoot::new(&repo_dir);
-        let ignored_path = IgnoredPath::new("target");
-        let ignored_paths = vec![ignored_path.clone()];
+        let ignored_path = IgnoredPath::new("target")?;
+        let ignored_paths = vec![ignored_path];
         let cfg = Config { ignored_paths };
         let watcher = DefaultChangeWatcher::make(repo_root.clone(), cfg)?;
 
@@ -148,7 +144,7 @@ mod test {
             tx.send(())?;
             Ok(())
         });
-        fs::write(repo_dir.path().join(ignored_path), "some-content")?;
+        fs::write(repo_dir.path().join("target"), "some-content")?;
 
         // then
         assert!(rx.recv_timeout(Duration::from_millis(500)).is_err());
@@ -161,11 +157,11 @@ mod test {
         // given
         init_tracing();
         let repo_dir = tempdir()?;
-        let ignored_path = IgnoredPath::new("target");
-        let ignored_dir = repo_dir.path().join(&ignored_path);
-        create_dir(ignored_dir)?;
+        let ignored_path = IgnoredPath::new("target")?;
+        let ignored_dir = repo_dir.path().join("target");
+        create_dir(&ignored_dir)?;
         let repo_root = RepoRoot::new(&repo_dir);
-        let ignored_paths = vec![ignored_path.clone()];
+        let ignored_paths = vec![ignored_path];
         let cfg = Config { ignored_paths };
         let watcher = DefaultChangeWatcher::make(repo_root.clone(), cfg)?;
 
@@ -176,7 +172,7 @@ mod test {
             tx.send(())?;
             Ok(())
         });
-        fs::write(ignored_path.as_ref().join("some-file"), "some-content")?;
+        fs::write(ignored_dir.join("some-file"), "some-content")?;
 
         // then
         assert!(rx.recv_timeout(Duration::from_millis(500)).is_err());
@@ -194,8 +190,8 @@ mod test {
         init_tracing();
         let repo_dir = tempdir()?;
         let repo_root = RepoRoot::new(&repo_dir);
-        let ignored_path = IgnoredPath::new("target");
-        let ignored_paths = vec![IgnoredPath::new(".git"), ignored_path.clone()];
+        let ignored_path = IgnoredPath::new("target")?;
+        let ignored_paths = vec![IgnoredPath::new(".git")?, ignored_path];
         let cfg = Config { ignored_paths };
         let watcher = DefaultChangeWatcher::make(repo_root.clone(), cfg)?;
 
@@ -206,7 +202,7 @@ mod test {
             tx.send(())?;
             Ok(())
         });
-        fs::write(repo_dir.path().join(ignored_path), "some-content")?;
+        fs::write(repo_dir.path().join("target"), "some-content")?;
 
         // then
         assert!(rx.recv_timeout(Duration::from_millis(1000)).is_err());

@@ -22,7 +22,7 @@ mod testingtools;
 #[actix_web::main]
 async fn main() -> Result<()> {
     init_tracing();
-    let ignored_paths = vec![IgnoredPath::new("target"), IgnoredPath::new(".git")];
+    let ignored_paths = vec![IgnoredPath::new("target")?, IgnoredPath::new(".git")?];
     let reader = setup_shells(Runtime::new(Config { ignored_paths })?);
     start_server(reader).await?;
 

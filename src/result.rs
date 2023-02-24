@@ -81,3 +81,9 @@ impl ResponseError for ServerErr {
         hyper::StatusCode::from_u16(500).unwrap()
     }
 }
+
+#[derive(Debug, Error)]
+pub enum IgnoredPathErr {
+    #[error("Failed to create ignored path.")]
+    Regex(#[from] regex::Error),
+}
