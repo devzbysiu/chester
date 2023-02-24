@@ -19,13 +19,12 @@ impl Runner for DefaultTestRunner {
     fn run_all(&self, repo_root: RepoRoot) -> Result<TestsStatus, RunnerErr> {
         let repo_root = repo_root.to_string();
         debug!("running tests in {repo_root}");
-        let cmd_res = run_cmd!(cd $repo_root ; cargo test);
-        if cmd_res.is_ok() {
+        if let Err(e) = run_cmd!(cd $repo_root ; cargo test) {
+            debug!("tests failed: {e}");
+            Ok(TestsStatus::Failure)
+        } else {
             debug!("tests succeeded");
             Ok(TestsStatus::Success)
-        } else {
-            debug!("tests failed: {cmd_res:?}");
-            Ok(TestsStatus::Failure)
         }
     }
 }
