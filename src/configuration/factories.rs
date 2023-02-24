@@ -1,6 +1,6 @@
 use crate::configuration::config::Config;
 use crate::data_providers::bus::LocalBus;
-use crate::data_providers::change_watcher::DefaultChangeWatcher;
+use crate::data_providers::change_watcher::FsChangeWatcher;
 use crate::data_providers::state::InMemoryState;
 use crate::data_providers::test_runner::DefaultTestRunner;
 use crate::entities::repo_root::RepoRoot;
@@ -39,7 +39,7 @@ pub fn event_bus() -> Result<EventBus, BusErr> {
 }
 
 fn change_watcher(repo_root: RepoRoot, cfg: Config) -> Result<ChangeWatcher, SetupErr> {
-    Ok(DefaultChangeWatcher::make(repo_root, cfg)?)
+    Ok(FsChangeWatcher::make(repo_root, cfg)?)
 }
 
 fn test_runner() -> TestRunner {

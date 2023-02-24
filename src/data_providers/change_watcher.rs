@@ -14,14 +14,14 @@ use tracing::{debug, instrument, trace};
 type Rx = Receiver<Result<Vec<DebouncedEvent>, Vec<notify::Error>>>;
 type Dbcr = Debouncer<RecommendedWatcher>;
 
-pub struct DefaultChangeWatcher {
+pub struct FsChangeWatcher {
     rx: RefCell<Rx>,
     watcher: RefCell<Dbcr>,
     repo_root: RefCell<RepoRoot>,
     cfg: Config,
 }
 
-impl DefaultChangeWatcher {
+impl FsChangeWatcher {
     pub fn make(repo_root: RepoRoot, cfg: Config) -> Result<ChangeWatcher, WatcherErr> {
         let (rx, watcher) = setup_watcher(&repo_root)?;
         Ok(Box::new(Self {
@@ -75,7 +75,7 @@ fn setup_watcher<P: AsRef<Path>>(path: P) -> Result<(Rx, Dbcr), WatcherErr> {
     Ok((rx, debouncer))
 }
 
-impl Watcher for DefaultChangeWatcher {
+impl Watcher for FsChangeWatcher {
     #[instrument(level = "trace", skip(self))]
     fn wait_for_change(&self, current_root: RepoRoot) -> Result<(), WatcherErr> {
         if *self.repo_root.borrow() != current_root {
@@ -109,7 +109,7 @@ mod test {
         init_tracing();
         let tmpdir = tempdir()?;
         let repo_root = RepoRoot::new(&tmpdir);
-        let watcher = DefaultChangeWatcher::make(repo_root.clone(), Config::default())?;
+        let watcher = FsChangeWatcher::make(repo_root.clone(), Config::default())?;
 
         // when
         let (tx, rx) = channel();
@@ -135,7 +135,7 @@ mod test {
         let ignored_path = IgnoredPath::new("target")?;
         let ignored_paths = vec![ignored_path];
         let cfg = Config { ignored_paths };
-        let watcher = DefaultChangeWatcher::make(repo_root.clone(), cfg)?;
+        let watcher = FsChangeWatcher::make(repo_root.clone(), cfg)?;
 
         // when
         let (tx, rx) = channel();
@@ -163,7 +163,7 @@ mod test {
         let repo_root = RepoRoot::new(&repo_dir);
         let ignored_paths = vec![ignored_path];
         let cfg = Config { ignored_paths };
-        let watcher = DefaultChangeWatcher::make(repo_root.clone(), cfg)?;
+        let watcher = FsChangeWatcher::make(repo_root.clone(), cfg)?;
 
         // when
         let (tx, rx) = channel();
@@ -193,7 +193,7 @@ mod test {
         let ignored_path = IgnoredPath::new("target")?;
         let ignored_paths = vec![IgnoredPath::new(".git")?, ignored_path];
         let cfg = Config { ignored_paths };
-        let watcher = DefaultChangeWatcher::make(repo_root.clone(), cfg)?;
+        let watcher = FsChangeWatcher::make(repo_root.clone(), cfg)?;
 
         // when
         let (tx, rx) = channel();
@@ -218,7 +218,7 @@ mod test {
         let repo_root = RepoRoot::new(&repo_dir);
         let ignored_paths = vec![IgnoredPath::new(".*123.*456")?];
         let cfg = Config { ignored_paths };
-        let watcher = DefaultChangeWatcher::make(repo_root.clone(), cfg)?;
+        let watcher = FsChangeWatcher::make(repo_root.clone(), cfg)?;
 
         // when
         let (tx, rx) = channel();
