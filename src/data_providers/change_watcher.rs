@@ -174,7 +174,7 @@ mod test {
         Ok(())
     }
 
-    // NOTE: There was a bug which exited the check loop too early, becouse
+    // NOTE: There was a bug which exited the check loop too early, because
     // one of the ignored path didn't match the event path, so it was interpreted
     // as valid change, but in reality all ignored paths should be checked before
     // making the decision.
