@@ -48,9 +48,9 @@ impl DefaultChangeWatcher {
     }
 
     #[instrument(level = "trace", skip(self, events))]
-    fn change_is_valid(&self, events: &[DebouncedEvent]) -> bool {
+    fn is_ignored(&self, events: &[DebouncedEvent]) -> bool {
         if self.cfg.ignored_paths.is_empty() {
-            return true;
+            return false;
         }
         let ignored_paths = &self.cfg.ignored_paths;
         for ev in events {
@@ -60,9 +60,9 @@ impl DefaultChangeWatcher {
                 continue;
             }
             trace!("change detected: {event_path:?}");
-            return true;
+            return false;
         }
-        false
+        true
     }
 }
 
@@ -84,7 +84,7 @@ impl Watcher for DefaultChangeWatcher {
         let rx = self.rx.borrow();
         loop {
             match rx.recv() {
-                Ok(Ok(events)) if self.change_is_valid(&events) => return Ok(()),
+                Ok(Ok(events)) if !self.is_ignored(&events) => return Ok(()),
                 _ => trace!("no valid change detected"),
             }
         }
