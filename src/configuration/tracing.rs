@@ -1,16 +1,20 @@
 use once_cell::sync::Lazy;
-use tracing::subscriber::set_global_default;
-use tracing_forest::ForestLayer;
-use tracing_subscriber::{layer::SubscriberExt, EnvFilter, Registry};
+use std::path::PathBuf;
+use tracing_appender::rolling;
+use tracing_subscriber::{fmt, EnvFilter};
 
 static TRACING: Lazy<()> = Lazy::new(setup_global_subscriber);
 
 fn setup_global_subscriber() {
+    let logs_dir = dirs::state_dir()
+        .unwrap_or(PathBuf::from("~/.local/state"))
+        .join("chester");
+    let file_appender = rolling::daily(logs_dir, "chester.log");
     let env_filter = EnvFilter::from_default_env();
-    let subscriber = Registry::default()
-        .with(env_filter)
-        .with(ForestLayer::default());
-    set_global_default(subscriber).expect("failed to set flobal default");
+    fmt()
+        .with_env_filter(env_filter)
+        .with_writer(file_appender)
+        .init();
 }
 
 pub fn init_tracing() {
