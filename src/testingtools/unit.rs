@@ -1,10 +1,15 @@
 use crate::configuration::factories::event_bus;
+use crate::entities::repo_root::RepoRoot;
 use crate::use_cases::bus::{BusEvent, EventBus, EventPublisher, EventSubscriber};
 
 use anyhow::Result;
+use fake::{Fake, Faker};
+use std::fs::create_dir;
+use std::path::{Path, PathBuf};
 use std::sync::mpsc::{channel, Receiver, Sender, TryRecvError};
-use std::thread;
 use std::time::Duration;
+use std::{fs, thread};
+use tempfile::{tempdir, TempDir};
 
 pub fn create_test_shim() -> Result<TestShim> {
     let (tx, rx) = channel();
@@ -12,12 +17,17 @@ pub fn create_test_shim() -> Result<TestShim> {
     let bus = event_bus()?;
     let sub = bus.subscriber();
     let publ = bus.publisher();
+    let repo_dir = tempdir()?;
+    let next_dir = PathBuf::from(Faker.fake::<String>());
+    create_dir(repo_dir.path().join(&next_dir))?;
     Ok(TestShim {
         rx,
         tx,
         bus,
         sub,
         publ,
+        repo_dir,
+        next_dir,
     })
 }
 
@@ -27,6 +37,8 @@ pub struct TestShim {
     bus: EventBus,
     sub: EventSubscriber,
     publ: EventPublisher,
+    repo_dir: TempDir,
+    next_dir: PathBuf,
 }
 
 impl TestShim {
@@ -83,5 +95,30 @@ impl TestShim {
     pub fn ignore_event(&self) -> Result<()> {
         let _event = self.sub.recv()?; // ignore message sent earliner
         Ok(())
+    }
+
+    pub fn repo_root(&self) -> RepoRoot {
+        RepoRoot::new(&self.repo_dir)
+    }
+
+    pub fn mk_file<P: AsRef<Path>>(&self, path: P) -> Result<()> {
+        fs::write(self.repo_dir.path().join(path), "some-content")?;
+        Ok(())
+    }
+
+    pub fn dir_in_repo(&self) -> PathBuf {
+        self.next_dir.clone()
+    }
+}
+
+pub struct ChangeDetector(pub Receiver<()>);
+
+impl ChangeDetector {
+    pub fn change_detected(&self) -> bool {
+        self.0.recv().is_ok()
+    }
+
+    pub fn no_change_detected(&self) -> bool {
+        self.0.recv_timeout(Duration::from_millis(1000)).is_err()
     }
 }

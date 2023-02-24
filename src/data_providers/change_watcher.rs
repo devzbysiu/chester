@@ -97,57 +97,59 @@ mod test {
 
     use crate::configuration::tracing::init_tracing;
     use crate::entities::ignored_path::IgnoredPath;
+    use crate::testingtools::unit::{create_test_shim, ChangeDetector};
 
     use anyhow::Result;
-    use std::fs::{self, create_dir};
-    use std::thread;
-    use tempfile::tempdir;
+    use fake::{Fake, Faker};
+    use std::thread::{self, JoinHandle};
 
     #[test]
     fn write_to_file_is_detected_as_change() -> Result<()> {
         // given
         init_tracing();
-        let tmpdir = tempdir()?;
-        let repo_root = RepoRoot::new(&tmpdir);
-        let watcher = FsChangeWatcher::make(repo_root.clone(), Config::default())?;
+        let shim = create_test_shim()?;
+        let watcher = FsChangeWatcher::make(shim.repo_root(), Config::default())?;
 
         // when
-        let (tx, rx) = channel();
-        thread::spawn(move || -> Result<()> {
-            watcher.wait_for_change(repo_root)?;
-            tx.send(())?;
-            Ok(())
-        });
-        fs::write(tmpdir.path().join("test-file"), "some-content")?;
+        let (_handle, detector) = run_watcher(shim.repo_root(), watcher);
+        shim.mk_file(Faker.fake::<String>())?;
 
         // then
-        assert!(rx.recv().is_ok());
+        assert!(detector.change_detected());
 
         Ok(())
+    }
+
+    fn run_watcher(
+        repo_root: RepoRoot,
+        watcher: ChangeWatcher,
+    ) -> (JoinHandle<Result<()>>, ChangeDetector) {
+        let (tx, rx) = channel();
+        (
+            thread::spawn(move || -> Result<()> {
+                watcher.wait_for_change(repo_root)?;
+                tx.send(())?;
+                Ok(())
+            }),
+            ChangeDetector(rx),
+        )
     }
 
     #[test]
     fn change_in_ignored_file_is_not_detected() -> Result<()> {
         // given
         init_tracing();
-        let repo_dir = tempdir()?;
-        let repo_root = RepoRoot::new(&repo_dir);
-        let ignored_path = IgnoredPath::new("target")?;
-        let ignored_paths = vec![ignored_path];
+        let shim = create_test_shim()?;
+        let ignored_paths = vec![IgnoredPath::new("target")?];
         let cfg = Config { ignored_paths };
-        let watcher = FsChangeWatcher::make(repo_root.clone(), cfg)?;
+        let watcher = FsChangeWatcher::make(shim.repo_root(), cfg)?;
 
         // when
-        let (tx, rx) = channel();
-        thread::spawn(move || -> Result<()> {
-            watcher.wait_for_change(repo_root)?;
-            tx.send(())?;
-            Ok(())
-        });
-        fs::write(repo_dir.path().join("target"), "some-content")?;
+        let (_handle, detector) = run_watcher(shim.repo_root(), watcher);
+        shim.mk_file("target")?;
 
         // then
-        assert!(rx.recv_timeout(Duration::from_millis(500)).is_err());
+        assert!(detector.no_change_detected());
 
         Ok(())
     }
@@ -156,26 +158,18 @@ mod test {
     fn change_in_ignored_dir_is_not_detected() -> Result<()> {
         // given
         init_tracing();
-        let repo_dir = tempdir()?;
-        let ignored_path = IgnoredPath::new("target")?;
-        let ignored_dir = repo_dir.path().join("target");
-        create_dir(&ignored_dir)?;
-        let repo_root = RepoRoot::new(&repo_dir);
-        let ignored_paths = vec![ignored_path];
+        let shim = create_test_shim()?;
+
+        let ignored_paths = vec![IgnoredPath::new(shim.dir_in_repo())?];
         let cfg = Config { ignored_paths };
-        let watcher = FsChangeWatcher::make(repo_root.clone(), cfg)?;
+        let watcher = FsChangeWatcher::make(shim.repo_root(), cfg)?;
 
         // when
-        let (tx, rx) = channel();
-        thread::spawn(move || -> Result<()> {
-            watcher.wait_for_change(repo_root)?;
-            tx.send(())?;
-            Ok(())
-        });
-        fs::write(ignored_dir.join("some-file"), "some-content")?;
+        let (_handle, detector) = run_watcher(shim.repo_root(), watcher);
+        shim.mk_file(shim.dir_in_repo().join("some-file"))?;
 
         // then
-        assert!(rx.recv_timeout(Duration::from_millis(500)).is_err());
+        assert!(detector.no_change_detected());
 
         Ok(())
     }
@@ -188,24 +182,17 @@ mod test {
     fn multiple_ignored_paths_are_checked() -> Result<()> {
         // given
         init_tracing();
-        let repo_dir = tempdir()?;
-        let repo_root = RepoRoot::new(&repo_dir);
-        let ignored_path = IgnoredPath::new("target")?;
-        let ignored_paths = vec![IgnoredPath::new(".git")?, ignored_path];
+        let shim = create_test_shim()?;
+        let ignored_paths = vec![IgnoredPath::new(".git")?, IgnoredPath::new("target")?];
         let cfg = Config { ignored_paths };
-        let watcher = FsChangeWatcher::make(repo_root.clone(), cfg)?;
+        let watcher = FsChangeWatcher::make(shim.repo_root(), cfg)?;
 
         // when
-        let (tx, rx) = channel();
-        thread::spawn(move || -> Result<()> {
-            watcher.wait_for_change(repo_root)?;
-            tx.send(())?;
-            Ok(())
-        });
-        fs::write(repo_dir.path().join("target"), "some-content")?;
+        let (_handle, detector) = run_watcher(shim.repo_root(), watcher);
+        shim.mk_file("target")?;
 
         // then
-        assert!(rx.recv_timeout(Duration::from_millis(1000)).is_err());
+        assert!(detector.no_change_detected());
 
         Ok(())
     }
@@ -214,23 +201,17 @@ mod test {
     fn regex_is_accepted_in_ignored_path() -> Result<()> {
         // given
         init_tracing();
-        let repo_dir = tempdir()?;
-        let repo_root = RepoRoot::new(&repo_dir);
+        let shim = create_test_shim()?;
         let ignored_paths = vec![IgnoredPath::new(".*123.*456")?];
         let cfg = Config { ignored_paths };
-        let watcher = FsChangeWatcher::make(repo_root.clone(), cfg)?;
+        let watcher = FsChangeWatcher::make(shim.repo_root(), cfg)?;
 
         // when
-        let (tx, rx) = channel();
-        thread::spawn(move || -> Result<()> {
-            watcher.wait_for_change(repo_root)?;
-            tx.send(())?;
-            Ok(())
-        });
-        fs::write(repo_dir.path().join("123something456"), "some-content")?;
+        let (_handle, detector) = run_watcher(shim.repo_root(), watcher);
+        shim.mk_file("123something456")?;
 
         // then
-        assert!(rx.recv_timeout(Duration::from_millis(1000)).is_err());
+        assert!(detector.no_change_detected());
 
         Ok(())
     }
