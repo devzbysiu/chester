@@ -7,6 +7,7 @@ use crate::data_providers::server::start_server;
 use crate::startup::setup_shells;
 
 use anyhow::Result;
+use entities::ignored_path::IgnoredPath;
 
 mod configuration;
 mod data_providers;
@@ -21,7 +22,8 @@ mod testingtools;
 #[actix_web::main]
 async fn main() -> Result<()> {
     init_tracing();
-    let reader = setup_shells(Runtime::new(Config::default())?);
+    let ignored_paths = vec![IgnoredPath::new("target"), IgnoredPath::new(".git")];
+    let reader = setup_shells(Runtime::new(Config { ignored_paths })?);
     start_server(reader).await?;
 
     Ok(())

@@ -52,18 +52,18 @@ impl DefaultChangeWatcher {
         let mut valid_change = false;
         let repo_root = repo_root.as_ref();
         let ignored_paths = &self.cfg.ignored_paths;
-        'outer: for ev in events {
+        for ev in events {
             let event_path = &ev.path;
-            for ignored_path in ignored_paths {
-                let ignored_path = repo_root.join(ignored_path);
-                if event_path.starts_with(ignored_path) {
-                    trace!("ignored path: {event_path:?}");
-                } else {
-                    trace!("change detected: {event_path:?}");
-                    valid_change = true;
-                    break 'outer;
-                }
+            if ignored_paths
+                .iter()
+                .any(|p| event_path.starts_with(repo_root.join(p)))
+            {
+                trace!("ignored path: {event_path:?}");
+                continue;
             }
+            trace!("change detected: {event_path:?}");
+            valid_change = true;
+            break;
         }
         valid_change |= ignored_paths.is_empty();
         trace!("changed: {}", if valid_change { "yes" } else { "no" });
@@ -181,6 +181,36 @@ mod test {
 
         // then
         assert!(rx.recv_timeout(Duration::from_millis(500)).is_err());
+
+        Ok(())
+    }
+
+    // NOTE: There was a bug which exited the check loop too early, becouse
+    // one of the ignored path didn't match the event path, so it was interpreted
+    // as valid change, but in reality all ignored paths should be checked before
+    // making the decision.
+    #[test]
+    fn multiple_ignored_paths_are_checked() -> Result<()> {
+        // given
+        init_tracing();
+        let repo_dir = tempdir()?;
+        let repo_root = RepoRoot::new(&repo_dir);
+        let ignored_path = IgnoredPath::new("target");
+        let ignored_paths = vec![IgnoredPath::new(".git"), ignored_path.clone()];
+        let cfg = Config { ignored_paths };
+        let watcher = DefaultChangeWatcher::make(repo_root.clone(), cfg)?;
+
+        // when
+        let (tx, rx) = channel();
+        thread::spawn(move || -> Result<()> {
+            watcher.wait_for_change(repo_root)?;
+            tx.send(())?;
+            Ok(())
+        });
+        fs::write(repo_dir.path().join(ignored_path), "some-content")?;
+
+        // then
+        assert!(rx.recv_timeout(Duration::from_millis(1000)).is_err());
 
         Ok(())
     }
