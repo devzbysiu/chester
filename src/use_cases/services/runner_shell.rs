@@ -45,8 +45,8 @@ mod test {
     use super::*;
 
     use crate::configuration::tracing::init_tracing;
-    use crate::testingtools::services::state::noop;
-    use crate::testingtools::services::test_runner::{failing, tracked, working};
+    use crate::testingtools::state::noop;
+    use crate::testingtools::test_runner::{failing, tracked, working};
     use crate::testingtools::unit::create_test_shim;
 
     use anyhow::Result;

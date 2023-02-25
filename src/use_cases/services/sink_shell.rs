@@ -39,7 +39,7 @@ impl ResultsSinkShell {
 mod test {
     use super::*;
 
-    use crate::testingtools::services::state::{tracked, working};
+    use crate::testingtools::state::{tracked, working};
     use crate::testingtools::unit::create_test_shim;
 
     use anyhow::Result;
