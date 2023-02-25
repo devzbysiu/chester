@@ -1,6 +1,9 @@
 use crate::entities::ignored_path::IgnoredPath;
 
-#[derive(Debug, Default, Clone)]
+use derive_builder::Builder;
+
+#[derive(Debug, Default, Clone, Builder)]
+#[builder(default)]
 pub struct Config {
     pub ignored_paths: Vec<IgnoredPath>,
     pub cmd: Cmd,
