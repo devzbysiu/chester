@@ -95,6 +95,7 @@ impl Watcher for FsChangeWatcher {
 mod test {
     use super::*;
 
+    use crate::configuration::config::Cmd;
     use crate::configuration::tracing::init_tracing;
     use crate::entities::ignored_path::IgnoredPath;
     use crate::testingtools::unit::{create_test_shim, ChangeDetector};
@@ -140,8 +141,10 @@ mod test {
         // given
         init_tracing();
         let shim = create_test_shim()?;
-        let ignored_paths = vec![IgnoredPath::new("target")?];
-        let cfg = Config { ignored_paths };
+        let cfg = Config {
+            ignored_paths: vec![IgnoredPath::new("target")?],
+            cmd: Cmd::default(),
+        };
         let watcher = FsChangeWatcher::make(shim.repo_root(), cfg)?;
 
         // when
@@ -159,9 +162,10 @@ mod test {
         // given
         init_tracing();
         let shim = create_test_shim()?;
-
-        let ignored_paths = vec![IgnoredPath::new(shim.dir_in_repo())?];
-        let cfg = Config { ignored_paths };
+        let cfg = Config {
+            ignored_paths: vec![IgnoredPath::new(shim.dir_in_repo())?],
+            cmd: Cmd::default(),
+        };
         let watcher = FsChangeWatcher::make(shim.repo_root(), cfg)?;
 
         // when
@@ -183,8 +187,10 @@ mod test {
         // given
         init_tracing();
         let shim = create_test_shim()?;
-        let ignored_paths = vec![IgnoredPath::new(".git")?, IgnoredPath::new("target")?];
-        let cfg = Config { ignored_paths };
+        let cfg = Config {
+            ignored_paths: vec![IgnoredPath::new(".git")?, IgnoredPath::new("target")?],
+            cmd: Cmd::default(),
+        };
         let watcher = FsChangeWatcher::make(shim.repo_root(), cfg)?;
 
         // when
@@ -202,8 +208,10 @@ mod test {
         // given
         init_tracing();
         let shim = create_test_shim()?;
-        let ignored_paths = vec![IgnoredPath::new(".*123.*456")?];
-        let cfg = Config { ignored_paths };
+        let cfg = Config {
+            ignored_paths: vec![IgnoredPath::new(".*123.*456")?],
+            cmd: Cmd::default(),
+        };
         let watcher = FsChangeWatcher::make(shim.repo_root(), cfg)?;
 
         // when

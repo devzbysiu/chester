@@ -1,3 +1,4 @@
+use crate::configuration::config::Config;
 use crate::entities::repo_root::RepoRoot;
 use crate::result::RunnerErr;
 use crate::use_cases::test_runner::{Runner, TestRunner, TestsStatus};
@@ -6,11 +7,13 @@ use cmd_lib::run_cmd;
 use tracing::{debug, instrument};
 
 #[derive(Debug)]
-pub struct DefaultTestRunner;
+pub struct DefaultTestRunner {
+    cfg: Config,
+}
 
 impl DefaultTestRunner {
-    pub fn make() -> TestRunner {
-        Box::new(Self)
+    pub fn make(cfg: Config) -> TestRunner {
+        Box::new(Self { cfg })
     }
 }
 
@@ -19,7 +22,9 @@ impl Runner for DefaultTestRunner {
     fn run_all(&self, repo_root: RepoRoot) -> Result<TestsStatus, RunnerErr> {
         let repo_root = repo_root.to_string();
         debug!("running tests in {repo_root}");
-        if let Err(e) = run_cmd!(cd $repo_root ; cargo test) {
+        let test_tool = &self.cfg.cmd.tool;
+        let test_args = &self.cfg.cmd.args;
+        if let Err(e) = run_cmd!(cd $repo_root ; $test_tool $test_args) {
             debug!("tests failed: {e}");
             Ok(TestsStatus::Failure)
         } else {
@@ -33,7 +38,7 @@ impl Runner for DefaultTestRunner {
 mod test {
     use super::*;
 
-    use crate::configuration::tracing::init_tracing;
+    use crate::configuration::{config::Cmd, tracing::init_tracing};
 
     use anyhow::Result;
     use tempfile::tempdir;
@@ -42,7 +47,11 @@ mod test {
     fn when_tests_fail_then_failure_status_is_returned() -> Result<()> {
         // given
         init_tracing();
-        let runner = DefaultTestRunner::make();
+        let cfg = Config {
+            ignored_paths: Vec::new(),
+            cmd: Cmd::new("cargo", "test"),
+        };
+        let runner = DefaultTestRunner::make(cfg);
         let invalid_repo_root = RepoRoot::new("/not/existing/path");
 
         // when
@@ -61,7 +70,11 @@ mod test {
         let tmpdir = tempdir()?;
         let tmpdir_path = tmpdir.path();
         run_cmd!(cd $tmpdir_path ; cargo new test_project)?;
-        let runner = DefaultTestRunner::make();
+        let cfg = Config {
+            ignored_paths: Vec::new(),
+            cmd: Cmd::new("cargo", "test"),
+        };
+        let runner = DefaultTestRunner::make(cfg);
         let project_path = tmpdir_path.join("test_project");
         let root = RepoRoot::new(project_path);
 

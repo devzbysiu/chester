@@ -27,8 +27,8 @@ impl Runtime {
         Ok(Self {
             cfg: cfg.clone(),
             bus,
-            change_watcher: change_watcher(state.reader().repo_root()?, cfg)?,
-            test_runner: test_runner(),
+            change_watcher: change_watcher(state.reader().repo_root()?, cfg.clone())?,
+            test_runner: test_runner(cfg),
             state,
         })
     }
@@ -42,8 +42,8 @@ fn change_watcher(repo_root: RepoRoot, cfg: Config) -> Result<ChangeWatcher, Set
     Ok(FsChangeWatcher::make(repo_root, cfg)?)
 }
 
-fn test_runner() -> TestRunner {
-    DefaultTestRunner::make()
+fn test_runner(cfg: Config) -> TestRunner {
+    DefaultTestRunner::make(cfg)
 }
 
 pub fn state(publ: EventPublisher) -> State {
