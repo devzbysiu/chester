@@ -104,6 +104,7 @@ mod test {
     use crate::configuration::tracing::init_tracing;
 
     use anyhow::Result;
+    use fake::{Fake, Faker};
 
     #[test]
     fn pending_status_is_set_as_default() -> Result<()> {
@@ -166,13 +167,14 @@ mod test {
         let state = InMemoryState::make(bus.publisher());
         let state_reader = state.reader();
         let state_writer = state.writer();
+        let root = Faker.fake::<String>();
         assert_eq!(state_reader.repo_root()?, RepoRoot::default());
 
         // when
-        state_writer.repo_root(RepoRoot::new("/some/path"))?;
+        state_writer.repo_root(RepoRoot::new(&root))?;
 
         // then
-        assert_eq!(state_reader.repo_root()?, RepoRoot::new("/some/path"));
+        assert_eq!(state_reader.repo_root()?, RepoRoot::new(root));
 
         Ok(())
     }
@@ -187,7 +189,7 @@ mod test {
         let state_writer = state.writer();
 
         // when
-        state_writer.repo_root(RepoRoot::new("/some/path"))?;
+        state_writer.repo_root(RepoRoot::new(Faker.fake::<String>()))?;
 
         // then
         assert_eq!(sub.recv()?, BusEvent::ChangeDetected);
