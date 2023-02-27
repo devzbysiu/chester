@@ -6,14 +6,14 @@ use crate::use_cases::state::State;
 
 #[allow(unused)]
 #[allow(clippy::needless_pass_by_value)]
-pub fn setup_shells(ctx: Runtime) -> State {
+pub fn setup_shells(rt: Runtime) -> State {
     let Runtime {
         cfg: _,
         bus,
         change_watcher,
         test_runner,
         state,
-    } = ctx;
+    } = rt;
 
     let watcher_shell = ChangeWatcherShell::new(bus.clone());
     let runner_shell = TestRunnerShell::new(bus.clone());
