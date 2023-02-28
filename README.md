@@ -47,6 +47,20 @@ changes to green which means the tests passed.
 
 **Note:** Keep in mind the GIF above is a separate project which uses chester.
 
+## Chester API
+
+### Tests status
+```bash
+curl --unix-socket "/run/user/$(id -u)/chester.sock" http://chester/tests/status  
+```
+
+### Update repository on which tests are run
+```bash
+curl --unix-socket "/run/user/$(id -u)/chester.sock" \
+  -XPUT -H "Content-Type: application/json" \
+  -d '{"repo_root": "<new repo path here>"}' \
+  http://chester/repo/root
+```
 
 # <p id="installation">Installation</p>
 
