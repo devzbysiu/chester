@@ -45,7 +45,9 @@ blinking which means that tests started. After the tests finish, the widget chan
 to red which means, that tests failed. Next, the test is fixed and changes are saved. The widget is bliking and then
 changes to green which means the tests passed.
 
-**Note:** Keep in mind the GIF above is a separate project which uses chester.
+**Note:** Keep in mind the GIF above is a separate project which uses chester. Head over to
+[AOT](https://github.com/devzbysiu/aot) for details how to install the widget. Chester is designed as an API you can
+build upon.
 
 ## Chester API
 
@@ -93,4 +95,6 @@ at your option.
 # <p id="contribution">Contribution</p>
 
 
-Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.
+Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion
+in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above,
+without any additional terms or conditions.
