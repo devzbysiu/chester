@@ -37,11 +37,28 @@
 
 # <p id="about">About</p>
 
-## --- TODO ---
+Chester is a daemon running in the background. It listens for the changes in the project you are working on
+and after every change it runs the tests. The results are exposed via REST API on local socket, so you can
+build your own software on top of that.
+
+Example use of chester: [Always On Tests](https://github.com/devzbysiu/aot) - periodically gets test results and
+display them using small desktop widget.
+
+![AOT](res/aot.gif)
+
+The test is changed to make tests fail. After save, in the top right corner you can see the widget starts
+blinking which means that tests started. After the tests finish, the widget changes
+to red which means, that tests failed. Next, the test is fixed and changes are saved. The widget is bliking and then
+changes to green which means the tests passed.
+
+**Note:** Keep in mind the GIF above is a separate project which uses chester.
+
 
 # <p id="installation">Installation</p>
 
-## --- TODO ---
+```bash
+cargo install --git https://github.com/devzbysiu/chester
+```
 
 # <p id="configuration">Configuration</p>
 
