@@ -3,21 +3,15 @@
   <h1><code>chester</code></h1>
 
   <h3>
-    <strong>CHANGEME</strong>
+    <strong>Like Tester but with Ch</strong>
   </h3>
 
   <p>
-   <img src="https://github.com/devzbysiu/chester/workflows/ci/badge.svg" alt="CI status
-    badge" />
+    <img src="https://img.shields.io/github/actions/workflow/status/devzbysiu/chester/ci.yml?style=for-the-badge" alt="CI status badge" />
     <a href="https://codecov.io/gh/devzbysiu/chester">
       <img src="https://img.shields.io/codecov/c/github/devzbysiu/chester?style=for-the-badge" alt="Code coverage"/>
     </a>
-    <a href="https://crates.io/crates/chester">
-      <img src="https://img.shields.io/crates/l/chester?style=for-the-badge" alt="License"/>
-    </a>
-    <a href="https://docs.rs/chester">
-      <img src="https://img.shields.io/badge/docs-latest-blue.svg?style=for-the-badge" alt="docs.rs docs" />
-    </a>
+    <img src="https://img.shields.io/crates/l/je?style=for-the-badge" alt="License"/>
   </p>
 
   <h3>
