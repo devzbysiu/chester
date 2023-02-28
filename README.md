@@ -62,6 +62,15 @@ curl --unix-socket "/run/user/$(id -u)/chester.sock" \
   http://chester/repo/root
 ```
 
+## Roadmap
+
+- [x] Tests status
+- [ ] Code coverage
+- [ ] Project quality
+  - [ ] Cyclometric Complexity
+  - [ ] Halstead Metrics (Effort to maintain code, difficulty to understand code etc)
+  - [ ] Maintability Index
+
 # <p id="installation">Installation</p>
 
 ```bash
