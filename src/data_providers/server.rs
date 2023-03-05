@@ -30,6 +30,7 @@ pub async fn start_server(state: State) -> std::io::Result<()> {
             .app_data(Data::new(state.reader()))
             .app_data(Data::new(state.writer()))
             .service(tests_status_endpt)
+            .service(coverage_status_endpt)
             .service(change_root)
     })
     .bind_uds(socket_path)?

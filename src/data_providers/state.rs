@@ -10,7 +10,8 @@ use crate::use_cases::state::{
 use std::sync::{Arc, RwLock};
 use tracing::instrument;
 
-type StatusState = Arc<RwLock<TestsState>>;
+type TestsStatusState = Arc<RwLock<TestsState>>;
+type CoverageStatusState = Arc<RwLock<CoverageState>>;
 type RepoRootState = Arc<RwLock<RepoRoot>>;
 
 pub struct InMemoryState {
@@ -20,10 +21,15 @@ pub struct InMemoryState {
 
 impl InMemoryState {
     pub fn make(publ: EventPublisher) -> State {
-        let status = Arc::new(RwLock::new(TestsState::default()));
+        let tests_state = Arc::new(RwLock::new(TestsState::default()));
+        let coverage_state = Arc::new(RwLock::new(CoverageState::default()));
         let repo_root = Arc::new(RwLock::new(RepoRoot::default()));
-        let reader = InMemoryStateRead::make(status.clone(), repo_root.clone());
-        let writer = InMemoryStateWrite::make(status, repo_root, publ);
+        let reader = InMemoryStateRead::make(
+            tests_state.clone(),
+            coverage_state.clone(),
+            repo_root.clone(),
+        );
+        let writer = InMemoryStateWrite::make(tests_state, coverage_state, repo_root, publ);
         Arc::new(Self { reader, writer })
     }
 }
@@ -40,26 +46,36 @@ impl AppState for InMemoryState {
 
 #[derive(Debug)]
 pub struct InMemoryStateRead {
-    status: StatusState,
+    tests_state: TestsStatusState,
+    coverage_state: CoverageStatusState,
     repo_root: RepoRootState,
 }
 
 impl InMemoryStateRead {
-    fn make(status: StatusState, repo_root: RepoRootState) -> StateReader {
-        Arc::new(Self { status, repo_root })
+    fn make(
+        tests_state: TestsStatusState,
+        coverage_state: CoverageStatusState,
+        repo_root: RepoRootState,
+    ) -> StateReader {
+        Arc::new(Self {
+            tests_state,
+            coverage_state,
+            repo_root,
+        })
     }
 }
 
 impl AppStateReader for InMemoryStateRead {
     #[instrument(level = "trace")]
     fn tests(&self) -> Result<TestsState, StateReaderErr> {
-        let status = self.status.read().expect("poisoned mutex");
-        Ok(status.clone())
+        let tests_state = self.tests_state.read().expect("poisoned mutex");
+        Ok(tests_state.clone())
     }
 
     #[instrument(level = "trace")]
     fn coverage(&self) -> Result<CoverageState, StateReaderErr> {
-        unimplemented!()
+        let coverage_state = self.coverage_state.read().expect("poisoned mutex");
+        Ok(coverage_state.clone())
     }
 
     #[instrument(level = "trace")]
@@ -70,15 +86,22 @@ impl AppStateReader for InMemoryStateRead {
 }
 
 pub struct InMemoryStateWrite {
-    status: StatusState,
+    tests_state: TestsStatusState,
+    coverage_state: CoverageStatusState,
     repo_root: RepoRootState,
     publ: EventPublisher,
 }
 
 impl InMemoryStateWrite {
-    fn make(status: StatusState, repo_root: RepoRootState, publ: EventPublisher) -> StateWriter {
+    fn make(
+        tests_state: TestsStatusState,
+        coverage_state: CoverageStatusState,
+        repo_root: RepoRootState,
+        publ: EventPublisher,
+    ) -> StateWriter {
         Arc::new(Self {
-            status,
+            tests_state,
+            coverage_state,
             repo_root,
             publ,
         })
@@ -87,15 +110,17 @@ impl InMemoryStateWrite {
 
 impl AppStateWriter for InMemoryStateWrite {
     #[instrument(level = "trace", skip(self))]
-    fn tests(&self, new_status: TestsState) -> Result<(), StateWriterErr> {
-        let mut status = self.status.write().expect("poisoned mutex");
-        *status = new_status;
+    fn tests(&self, new_tests_state: TestsState) -> Result<(), StateWriterErr> {
+        let mut tests_state = self.tests_state.write().expect("poisoned mutex");
+        *tests_state = new_tests_state;
         Ok(())
     }
 
     #[instrument(level = "trace", skip(self))]
-    fn coverage(&self, coverage: CoverageState) -> Result<(), StateWriterErr> {
-        unimplemented!()
+    fn coverage(&self, new_coverage: CoverageState) -> Result<(), StateWriterErr> {
+        let mut coverage_state = self.coverage_state.write().expect("poisoned mutex");
+        *coverage_state = new_coverage;
+        Ok(())
     }
 
     #[instrument(level = "trace", skip(self))]
