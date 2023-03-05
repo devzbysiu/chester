@@ -1,5 +1,6 @@
+use crate::entities::coverage::CoverageState;
 use crate::entities::repo_root::RepoRoot;
-use crate::entities::status::TestsStatus;
+use crate::entities::status::TestsState;
 use crate::result::{StateReaderErr, StateWriterErr};
 
 use std::fmt::Debug;
@@ -15,20 +16,22 @@ pub trait AppState: Sync + Send {
 }
 
 pub trait AppStateReader: Sync + Send {
-    fn status(&self) -> Result<TestsStatus, StateReaderErr>;
+    fn tests(&self) -> Result<TestsState, StateReaderErr>;
+    fn coverage(&self) -> Result<CoverageState, StateReaderErr>;
     fn repo_root(&self) -> Result<RepoRoot, StateReaderErr>;
 }
 
 impl Debug for dyn AppStateReader {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let status = self.status().unwrap_or_default();
+        let status = self.tests().unwrap_or_default();
         let repo_root = self.repo_root().unwrap_or_default();
         write!(f, "status: {status}, repo_root: {repo_root}")
     }
 }
 
 pub trait AppStateWriter: Sync + Send {
-    fn status(&self, status: TestsStatus) -> Result<(), StateWriterErr>;
+    fn tests(&self, status: TestsState) -> Result<(), StateWriterErr>;
+    fn coverage(&self, coverage: CoverageState) -> Result<(), StateWriterErr>;
     fn repo_root(&self, repo_root: RepoRoot) -> Result<(), StateWriterErr>;
 }
 
@@ -59,8 +62,12 @@ mod test {
     struct NoOpStateReader;
 
     impl AppStateReader for NoOpStateReader {
-        fn status(&self) -> Result<TestsStatus, StateReaderErr> {
-            Ok(TestsStatus::Pending)
+        fn tests(&self) -> Result<TestsState, StateReaderErr> {
+            Ok(TestsState::Pending)
+        }
+
+        fn coverage(&self) -> Result<CoverageState, StateReaderErr> {
+            Ok(CoverageState::Pending)
         }
 
         fn repo_root(&self) -> Result<RepoRoot, StateReaderErr> {

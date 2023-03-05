@@ -1,7 +1,7 @@
 use crate::configuration::config::Config;
 use crate::entities::repo_root::RepoRoot;
 use crate::result::RunnerErr;
-use crate::use_cases::test_runner::{Runner, TestRunner, TestsStatus};
+use crate::use_cases::test_runner::{TRunner, TestRunner, TestsRunStatus};
 
 use cmd_lib::run_cmd;
 use tracing::{debug, instrument};
@@ -17,19 +17,19 @@ impl DefaultTestRunner {
     }
 }
 
-impl Runner for DefaultTestRunner {
+impl TRunner for DefaultTestRunner {
     #[instrument(skip(self))]
-    fn run_all(&self, repo_root: RepoRoot) -> Result<TestsStatus, RunnerErr> {
+    fn run_all(&self, repo_root: RepoRoot) -> Result<TestsRunStatus, RunnerErr> {
         let repo_root = repo_root.to_string();
         debug!("running tests in {repo_root}");
-        let test_tool = &self.cfg.cmd.tool;
-        let test_args = &self.cfg.cmd.args;
+        let test_tool = &self.cfg.tests_cmd.tool;
+        let test_args = &self.cfg.tests_cmd.args;
         if let Err(e) = run_cmd!(cd $repo_root ; $test_tool $test_args) {
             debug!("tests failed: {e}");
-            Ok(TestsStatus::Failure)
+            Ok(TestsRunStatus::Failure)
         } else {
             debug!("tests succeeded");
-            Ok(TestsStatus::Success)
+            Ok(TestsRunStatus::Success)
         }
     }
 }
@@ -49,7 +49,7 @@ mod test {
         // given
         init_tracing();
         let cfg = ConfigBuilder::default()
-            .cmd(Cmd::new("cargo", "test"))
+            .tests_cmd(Cmd::new("cargo", "test"))
             .build()?;
         let runner = DefaultTestRunner::make(cfg);
         let invalid_repo_root = RepoRoot::new("/not/existing/path");
@@ -58,7 +58,7 @@ mod test {
         let res = runner.run_all(invalid_repo_root)?;
 
         // then
-        assert_eq!(res, TestsStatus::Failure);
+        assert_eq!(res, TestsRunStatus::Failure);
 
         Ok(())
     }
@@ -71,7 +71,7 @@ mod test {
         let tmpdir_path = tmpdir.path();
         run_cmd!(cd $tmpdir_path ; cargo new test_project)?;
         let cfg = ConfigBuilder::default()
-            .cmd(Cmd::new("cargo", "test"))
+            .tests_cmd(Cmd::new("cargo", "test"))
             .build()?;
         let runner = DefaultTestRunner::make(cfg);
         let project_path = tmpdir_path.join("test_project");
@@ -81,7 +81,7 @@ mod test {
         let res = runner.run_all(root)?;
 
         // then
-        assert_eq!(res, TestsStatus::Success);
+        assert_eq!(res, TestsRunStatus::Success);
 
         Ok(())
     }

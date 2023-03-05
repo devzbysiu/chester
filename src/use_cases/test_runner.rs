@@ -1,15 +1,15 @@
 use crate::entities::repo_root::RepoRoot;
 use crate::result::RunnerErr;
 
-pub type TestRunner = Box<dyn Runner>;
+pub type TestRunner = Box<dyn TRunner>;
 
-pub trait Runner: Send {
-    fn run_all(&self, repo_root: RepoRoot) -> Result<TestsStatus, RunnerErr>;
+pub trait TRunner: Send {
+    fn run_all(&self, repo_root: RepoRoot) -> Result<TestsRunStatus, RunnerErr>;
 }
 
 #[allow(unused)]
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum TestsStatus {
+pub enum TestsRunStatus {
     Success,
     Failure,
 }

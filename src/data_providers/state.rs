@@ -1,5 +1,6 @@
+use crate::entities::coverage::CoverageState;
 use crate::entities::repo_root::RepoRoot;
-use crate::entities::status::TestsStatus;
+use crate::entities::status::TestsState;
 use crate::result::{StateReaderErr, StateWriterErr};
 use crate::use_cases::bus::{BusEvent, EventPublisher};
 use crate::use_cases::state::{
@@ -9,7 +10,7 @@ use crate::use_cases::state::{
 use std::sync::{Arc, RwLock};
 use tracing::instrument;
 
-type StatusState = Arc<RwLock<TestsStatus>>;
+type StatusState = Arc<RwLock<TestsState>>;
 type RepoRootState = Arc<RwLock<RepoRoot>>;
 
 pub struct InMemoryState {
@@ -19,7 +20,7 @@ pub struct InMemoryState {
 
 impl InMemoryState {
     pub fn make(publ: EventPublisher) -> State {
-        let status = Arc::new(RwLock::new(TestsStatus::default()));
+        let status = Arc::new(RwLock::new(TestsState::default()));
         let repo_root = Arc::new(RwLock::new(RepoRoot::default()));
         let reader = InMemoryStateRead::make(status.clone(), repo_root.clone());
         let writer = InMemoryStateWrite::make(status, repo_root, publ);
@@ -51,9 +52,14 @@ impl InMemoryStateRead {
 
 impl AppStateReader for InMemoryStateRead {
     #[instrument(level = "trace")]
-    fn status(&self) -> Result<TestsStatus, StateReaderErr> {
+    fn tests(&self) -> Result<TestsState, StateReaderErr> {
         let status = self.status.read().expect("poisoned mutex");
         Ok(status.clone())
+    }
+
+    #[instrument(level = "trace")]
+    fn coverage(&self) -> Result<CoverageState, StateReaderErr> {
+        unimplemented!()
     }
 
     #[instrument(level = "trace")]
@@ -81,10 +87,15 @@ impl InMemoryStateWrite {
 
 impl AppStateWriter for InMemoryStateWrite {
     #[instrument(level = "trace", skip(self))]
-    fn status(&self, new_status: TestsStatus) -> Result<(), StateWriterErr> {
+    fn tests(&self, new_status: TestsState) -> Result<(), StateWriterErr> {
         let mut status = self.status.write().expect("poisoned mutex");
         *status = new_status;
         Ok(())
+    }
+
+    #[instrument(level = "trace", skip(self))]
+    fn coverage(&self, coverage: CoverageState) -> Result<(), StateWriterErr> {
+        unimplemented!()
     }
 
     #[instrument(level = "trace", skip(self))]
@@ -115,10 +126,10 @@ mod test {
         let state = state.reader();
 
         // when
-        let status = state.status()?;
+        let status = state.tests()?;
 
         // then
-        assert_eq!(status, TestsStatus::Pending);
+        assert_eq!(status, TestsState::Pending);
 
         Ok(())
     }
@@ -148,13 +159,13 @@ mod test {
         let state = InMemoryState::make(bus.publisher());
         let state_reader = state.reader();
         let state_writer = state.writer();
-        assert_eq!(state_reader.status()?, TestsStatus::Pending);
+        assert_eq!(state_reader.tests()?, TestsState::Pending);
 
         // when
-        state_writer.status(TestsStatus::Success)?;
+        state_writer.tests(TestsState::Success)?;
 
         // then
-        assert_eq!(state_reader.status()?, TestsStatus::Success);
+        assert_eq!(state_reader.tests()?, TestsState::Success);
 
         Ok(())
     }

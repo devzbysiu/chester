@@ -23,7 +23,8 @@ mod testingtools;
 async fn main() -> Result<()> {
     init_tracing();
     let cfg = ConfigBuilder::default()
-        .cmd(Cmd::new("cargo", "test"))
+        .tests_cmd(Cmd::new("cargo", "test"))
+        .coverage_cmd(Cmd::new("cargo", "tarpaulin"))
         .ignored_paths(vec![IgnoredPath::new("target")?, IgnoredPath::new(".git")?])
         .build()?;
     let reader = setup_shells(Runtime::new(cfg)?);

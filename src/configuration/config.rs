@@ -6,7 +6,8 @@ use derive_builder::Builder;
 #[builder(default)]
 pub struct Config {
     pub ignored_paths: Vec<IgnoredPath>,
-    pub cmd: Cmd,
+    pub tests_cmd: Cmd,
+    pub coverage_cmd: Cmd,
 }
 
 #[derive(Debug, Default, Clone)]

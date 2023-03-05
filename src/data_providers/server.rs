@@ -1,5 +1,6 @@
+use crate::entities::coverage::CoverageState;
 use crate::entities::repo_root::RepoRoot;
-use crate::entities::status::TestsStatus;
+use crate::entities::status::TestsState;
 use crate::result::ServerErr;
 use crate::use_cases::state::State;
 use crate::use_cases::state::{StateReader, StateWriter};
@@ -28,7 +29,7 @@ pub async fn start_server(state: State) -> std::io::Result<()> {
             .wrap(middleware::Logger::default())
             .app_data(Data::new(state.reader()))
             .app_data(Data::new(state.writer()))
-            .service(status)
+            .service(tests_status_endpt)
             .service(change_root)
     })
     .bind_uds(socket_path)?
@@ -39,12 +40,22 @@ pub async fn start_server(state: State) -> std::io::Result<()> {
 
 #[instrument(level = "trace")]
 #[get("/tests/status")]
-async fn status(state: StateReaderData) -> Result<Json<StatusResp>> {
+async fn tests_status_endpt(state: StateReaderData) -> Result<Json<TestsStatusResp>> {
     let status = state
-        .status()
-        .map_err(|_| server_err("Error while checking status."))?;
+        .tests()
+        .map_err(|_| server_err("Error while checking tests status."))?;
     trace!("responding with {status}");
-    Ok(Json(StatusResp::new(status)))
+    Ok(Json(TestsStatusResp::new(status)))
+}
+
+#[instrument(level = "trace")]
+#[get("/coverage/status")]
+async fn coverage_status_endpt(state: StateReaderData) -> Result<Json<CoverageStatusResp>> {
+    let status = state
+        .coverage()
+        .map_err(|_| server_err("Error while checking coverage status."))?;
+    trace!("responding with {status}");
+    Ok(Json(CoverageStatusResp::new(status)))
 }
 
 fn server_err<S: Into<String>>(msg: S) -> ServerErr {
@@ -52,13 +63,24 @@ fn server_err<S: Into<String>>(msg: S) -> ServerErr {
 }
 
 #[derive(Debug, Serialize)]
-struct StatusResp {
-    tests_status: TestsStatus,
+struct TestsStatusResp {
+    tests_status: TestsState,
 }
 
-impl StatusResp {
-    fn new(tests_status: TestsStatus) -> Self {
+impl TestsStatusResp {
+    fn new(tests_status: TestsState) -> Self {
         Self { tests_status }
+    }
+}
+
+#[derive(Debug, Serialize)]
+struct CoverageStatusResp {
+    coverage_status: CoverageState,
+}
+
+impl CoverageStatusResp {
+    fn new(coverage_status: CoverageState) -> Self {
+        Self { coverage_status }
     }
 }
 

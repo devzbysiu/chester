@@ -29,6 +29,15 @@ pub enum RunnerErr {
 }
 
 #[derive(Debug, Error)]
+pub enum CoverageErr {
+    #[error("Error when using bus.")]
+    Bus(#[from] BusErr),
+
+    #[error("Error when reading state.")]
+    Read(#[from] StateReaderErr),
+}
+
+#[derive(Debug, Error)]
 pub enum SinkErr {
     #[error("Error when using bus.")]
     Bus(#[from] BusErr),

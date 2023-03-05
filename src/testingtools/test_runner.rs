@@ -1,7 +1,7 @@
 use crate::entities::repo_root::RepoRoot;
 use crate::result::{BusErr, RunnerErr};
 use crate::testingtools::{pipe, MutexExt, Spy, Tx};
-use crate::use_cases::test_runner::{Runner, TestRunner, TestsStatus};
+use crate::use_cases::test_runner::{TRunner, TestRunner, TestsRunStatus};
 
 use anyhow::anyhow;
 
@@ -22,8 +22,8 @@ impl TrackedTestRunner {
     }
 }
 
-impl Runner for TrackedTestRunner {
-    fn run_all(&self, repo_root: RepoRoot) -> Result<TestsStatus, RunnerErr> {
+impl TRunner for TrackedTestRunner {
+    fn run_all(&self, repo_root: RepoRoot) -> Result<TestsRunStatus, RunnerErr> {
         let res = self.runner.run_all(repo_root);
         self.tx.signal(());
         res
@@ -44,22 +44,22 @@ impl TestRunnerSpy {
     }
 }
 
-pub fn working(result: TestsStatus) -> TestRunner {
+pub fn working(result: TestsRunStatus) -> TestRunner {
     WorkingTestRunner::make(result)
 }
 
 pub struct WorkingTestRunner {
-    result: TestsStatus,
+    result: TestsRunStatus,
 }
 
 impl WorkingTestRunner {
-    fn make(result: TestsStatus) -> TestRunner {
+    fn make(result: TestsRunStatus) -> TestRunner {
         Box::new(Self { result })
     }
 }
 
-impl Runner for WorkingTestRunner {
-    fn run_all(&self, _repo_root: RepoRoot) -> Result<TestsStatus, RunnerErr> {
+impl TRunner for WorkingTestRunner {
+    fn run_all(&self, _repo_root: RepoRoot) -> Result<TestsRunStatus, RunnerErr> {
         Ok(self.result.clone())
     }
 }
@@ -76,8 +76,8 @@ impl FailingTestRunner {
     }
 }
 
-impl Runner for FailingTestRunner {
-    fn run_all(&self, _repo_root: RepoRoot) -> Result<TestsStatus, RunnerErr> {
+impl TRunner for FailingTestRunner {
+    fn run_all(&self, _repo_root: RepoRoot) -> Result<TestsRunStatus, RunnerErr> {
         Err(RunnerErr::Bus(BusErr::Generic(anyhow!("Failure"))))
     }
 }

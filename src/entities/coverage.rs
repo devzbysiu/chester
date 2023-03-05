@@ -4,27 +4,27 @@ use serde::Serialize;
 
 #[derive(Serialize, Debug, Eq, PartialEq, Clone)]
 #[serde(rename_all = "lowercase")]
-pub enum TestsState {
+pub enum CoverageState {
     Pending,
     Failure,
-    Success,
+    Success(u8),
 }
 
-impl Display for TestsState {
+impl Display for CoverageState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
             "{}",
             match self {
-                TestsState::Pending => "pending",
-                TestsState::Failure => "failure",
-                TestsState::Success => "success",
+                CoverageState::Pending => "pending".to_string(),
+                CoverageState::Failure => "failure".to_string(),
+                CoverageState::Success(val) => format!("{val}"),
             }
         )
     }
 }
 
-impl Default for TestsState {
+impl Default for CoverageState {
     fn default() -> Self {
         Self::Pending
     }
@@ -37,15 +37,15 @@ mod test {
     use crate::configuration::tracing::init_tracing;
 
     #[test]
-    fn default_status_is_pending() {
+    fn default_coverage_status_is_pending() {
         // given
         init_tracing();
 
         // when
-        let status = TestsState::default();
+        let status = CoverageState::default();
 
         // then
-        assert_eq!(status, TestsState::Pending);
+        assert_eq!(status, CoverageState::Pending);
     }
 
     #[test]
@@ -54,8 +54,8 @@ mod test {
         init_tracing();
 
         // then
-        assert_eq!(TestsState::Pending.to_string(), "pending");
-        assert_eq!(TestsState::Failure.to_string(), "failure");
-        assert_eq!(TestsState::Success.to_string(), "success");
+        assert_eq!(CoverageState::Pending.to_string(), "pending");
+        assert_eq!(CoverageState::Failure.to_string(), "failure");
+        assert_eq!(CoverageState::Success(10).to_string(), "10");
     }
 }

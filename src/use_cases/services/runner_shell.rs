@@ -1,7 +1,7 @@
 use crate::result::RunnerErr;
 use crate::use_cases::bus::{BusEvent, EventBus};
 use crate::use_cases::state::StateReader;
-use crate::use_cases::test_runner::{TestRunner, TestsStatus};
+use crate::use_cases::test_runner::{TestRunner, TestsRunStatus};
 
 use std::thread;
 use tracing::{debug, instrument, trace};
@@ -25,7 +25,7 @@ impl TestRunnerShell {
             loop {
                 if let Ok(BusEvent::ChangeDetected) = sub.recv() {
                     debug!("running tests");
-                    if let Ok(TestsStatus::Success) = test_runner.run_all(state.repo_root()?) {
+                    if let Ok(TestsRunStatus::Success) = test_runner.run_all(state.repo_root()?) {
                         debug!("tests passed");
                         publ.send(BusEvent::TestsPassed)?;
                     } else {
@@ -55,7 +55,7 @@ mod test {
     fn tests_are_run_when_any_change_is_detected() -> Result<()> {
         // given
         init_tracing();
-        let (test_runner_spy, test_runner) = tracked(working(TestsStatus::Success));
+        let (test_runner_spy, test_runner) = tracked(working(TestsRunStatus::Success));
         let noop_state = noop();
         let shim = create_test_shim()?;
         TestRunnerShell::new(shim.bus()).run(test_runner, noop_state.reader());
@@ -73,7 +73,7 @@ mod test {
     fn when_tests_pass_there_is_correct_event_on_the_bus() -> Result<()> {
         // given
         init_tracing();
-        let test_runner = working(TestsStatus::Success);
+        let test_runner = working(TestsRunStatus::Success);
         let noop_state = noop();
         let shim = create_test_shim()?;
         TestRunnerShell::new(shim.bus()).run(test_runner, noop_state.reader());
@@ -92,7 +92,7 @@ mod test {
     fn when_tests_fail_there_is_correct_event_on_the_bus() -> Result<()> {
         // given
         init_tracing();
-        let test_runner = working(TestsStatus::Failure);
+        let test_runner = working(TestsRunStatus::Failure);
         let noop_state = noop();
         let shim = create_test_shim()?;
         TestRunnerShell::new(shim.bus()).run(test_runner, noop_state.reader());
