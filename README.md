@@ -26,37 +26,42 @@
     <a href="#contribution">Contribution</a>
   </h3>
 
-  <sub><h4>Built with 🦀</h4></sub>
+<sub><h4>Built with 🦀</h4></sub>
+
 </div>
 
 # <p id="about">About</p>
 
-Chester is a daemon running in the background. It listens for the changes in the project you are working on
-and after every change it runs the tests. The results are exposed via REST API on local socket, so you can
-build your own software on top of that.
+Chester is a daemon running in the background. It listens for the changes in the
+project you are working on and after every change it runs the tests. The results
+are exposed via REST API on local socket, so you can build your own software on
+top of that.
 
-Example use of chester: [Always On Tests](https://github.com/devzbysiu/aot) - periodically gets test results and
-display them using small desktop widget.
+Example use of chester: [Always On Tests](https://github.com/devzbysiu/aot) -
+periodically gets test results and display them using small desktop widget.
 
 ![AOT](res/aot.gif)
 
-The test is changed to make tests fail. After save, in the top right corner you can see the widget starts
-blinking which means that tests started. After the tests finish, the widget changes
-to red which means, that tests failed. Next, the test is fixed and changes are saved. The widget is bliking and then
-changes to green which means the tests passed.
+The test is changed to make tests fail. After save, in the top right corner you
+can see the widget starts blinking which means that tests started. After the
+tests finish, the widget changes to red which means, that tests failed. Next,
+the test is fixed and changes are saved. The widget is blinking and then changes
+to green which means the tests passed.
 
-**Note:** Keep in mind the GIF above is a separate project which uses chester. Head over to
-[AOT](https://github.com/devzbysiu/aot) for details how to install the widget. Chester is designed as an API you can
-build upon.
+**Note:** Keep in mind the GIF above is a separate project which uses chester.
+Head over to [AOT](https://github.com/devzbysiu/aot) for details how to install
+the widget. Chester is designed as an API you can build upon.
 
 ## Chester API
 
 ### Tests status
+
 ```bash
-curl --unix-socket "/run/user/$(id -u)/chester.sock" http://chester/tests/status  
+curl --unix-socket "/run/user/$(id -u)/chester.sock" http://chester/tests/status
 ```
 
 ### Update repository on which tests are run
+
 ```bash
 curl --unix-socket "/run/user/$(id -u)/chester.sock" \
   -XPUT -H "Content-Type: application/json" \
@@ -69,9 +74,10 @@ curl --unix-socket "/run/user/$(id -u)/chester.sock" \
 - [x] Tests status
 - [ ] Code coverage
 - [ ] Project quality
-  - [ ] Cyclometric Complexity
-  - [ ] Halstead Metrics (Effort to maintain code, difficulty to understand code etc)
-  - [ ] Maintability Index
+  - [ ] Cyclomatic Complexity
+  - [ ] Halstead Metrics (Effort to maintain code, difficulty to understand code
+        etc.)
+  - [ ] Maintainability Index
 
 # <p id="installation">Installation</p>
 
@@ -87,14 +93,14 @@ cargo install --git https://github.com/devzbysiu/chester
 
 This project is licensed under either of
 
-- Apache License, Version 2.0, (LICENSE-APACHE or http://www.apache.org/licenses/LICENSE-2.0)
+- Apache License, Version 2.0, (LICENSE-APACHE or
+  http://www.apache.org/licenses/LICENSE-2.0)
 - MIT license (LICENSE-MIT or http://opensource.org/licenses/MIT)
 
-at your option.
+At your option.
 
 # <p id="contribution">Contribution</p>
 
-
-Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion
-in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above,
-without any additional terms or conditions.
+Unless you explicitly state otherwise, any contribution intentionally submitted
+for inclusion in the work by you, as defined in the Apache-2.0 license, shall be
+dual licensed as above, without any additional terms or conditions.
