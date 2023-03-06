@@ -1,10 +1,9 @@
 #![allow(clippy::module_name_repetitions)]
 
-use crate::configuration::config::{Cmd, ConfigBuilder};
+use crate::configuration::config::cfg;
 use crate::configuration::factories::Runtime;
 use crate::configuration::tracing::init_tracing;
 use crate::data_providers::server::start_server;
-use crate::entities::ignored_path::IgnoredPath;
 use crate::startup::setup_shells;
 
 use anyhow::Result;
@@ -22,13 +21,7 @@ mod testingtools;
 #[actix_web::main]
 async fn main() -> Result<()> {
     init_tracing();
-    let cfg = ConfigBuilder::default()
-        .tests_cmd(Cmd::new("cargo", &["test"]))
-        .coverage_cmd(Cmd::new("cargo", &["tarpaulin", "--skip-clean"]))
-        .ignored_paths(vec![IgnoredPath::new("target")?, IgnoredPath::new(".git")?])
-        .build()?;
-    let reader = setup_shells(Runtime::new(cfg)?);
-    start_server(reader).await?;
+    start_server(setup_shells(Runtime::new(cfg()?)?)).await?;
 
     Ok(())
 }

@@ -1,8 +1,17 @@
-use crate::{entities::ignored_path::IgnoredPath, result::CmdErr};
+use crate::entities::ignored_path::IgnoredPath;
+use crate::result::{CfgErr, CmdErr};
 
 use derive_builder::Builder;
 use std::path::Path;
 use std::process::{Command, ExitStatus, Stdio};
+
+pub fn cfg() -> Result<Config, CfgErr> {
+    Ok(ConfigBuilder::default()
+        .tests_cmd(Cmd::new("cargo", &["test"]))
+        .coverage_cmd(Cmd::new("cargo", &["tarpaulin", "--skip-clean"]))
+        .ignored_paths(vec![IgnoredPath::new("target")?, IgnoredPath::new(".git")?])
+        .build()?)
+}
 
 #[derive(Debug, Default, Clone, Builder)]
 #[builder(default)]

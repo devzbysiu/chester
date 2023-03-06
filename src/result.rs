@@ -1,3 +1,5 @@
+use crate::configuration::config::ConfigBuilderError;
+
 use actix_web::ResponseError;
 use thiserror::Error;
 
@@ -104,4 +106,13 @@ pub enum IgnoredPathErr {
 pub enum CmdErr {
     #[error("Error while executing cmd.")]
     Io(#[from] std::io::Error),
+}
+
+#[derive(Debug, Error)]
+pub enum CfgErr {
+    #[error("Error while executing cmd.")]
+    Builder(#[from] ConfigBuilderError),
+
+    #[error("Failed to configure ignored paths.")]
+    IgnoredPath(#[from] IgnoredPathErr),
 }
