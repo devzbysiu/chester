@@ -21,11 +21,11 @@ pub trait Subscriber: Sync + Send {
     fn recv(&self) -> Result<BusEvent, BusErr>;
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum BusEvent {
     ChangeDetected,
     TestsPassed,
     TestsFailed,
-    GotCoverage(u8),
+    GotCoverage(f32),
     CoverageFailed,
 }

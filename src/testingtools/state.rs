@@ -220,7 +220,7 @@ impl AppStateReader for WorkingStateRead {
     }
 
     fn coverage(&self) -> Result<CoverageState, StateReaderErr> {
-        Ok(CoverageState::Success(20))
+        Ok(CoverageState::Success(20.0))
     }
 
     fn repo_root(&self) -> Result<RepoRoot, StateReaderErr> {

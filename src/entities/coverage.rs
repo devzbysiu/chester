@@ -1,13 +1,20 @@
+use serde::{Serialize, Serializer};
 use std::fmt::Display;
 
-use serde::Serialize;
-
-#[derive(Serialize, Debug, Eq, PartialEq, Clone)]
-#[serde(rename_all = "lowercase")]
+#[derive(Debug, PartialEq, Clone)]
 pub enum CoverageState {
     Pending,
     Failure,
-    Success(u8),
+    Success(f32),
+}
+
+impl Serialize for CoverageState {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
+    }
 }
 
 impl Display for CoverageState {
@@ -56,6 +63,6 @@ mod test {
         // then
         assert_eq!(CoverageState::Pending.to_string(), "pending");
         assert_eq!(CoverageState::Failure.to_string(), "failure");
-        assert_eq!(CoverageState::Success(10).to_string(), "10");
+        assert_eq!(CoverageState::Success(10.1).to_string(), "10.1");
     }
 }

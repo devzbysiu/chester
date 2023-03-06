@@ -33,6 +33,9 @@ pub enum CoverageErr {
     #[error("Error when using bus.")]
     Bus(#[from] BusErr),
 
+    #[error("Error when creating regex.")]
+    Regex(#[from] regex::Error),
+
     #[error("Error when reading state.")]
     Read(#[from] StateReaderErr),
 }

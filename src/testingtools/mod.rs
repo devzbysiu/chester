@@ -9,7 +9,7 @@ pub mod unit;
 
 pub fn pipe<T>() -> (Tx<T>, Spy<T>)
 where
-    T: Eq,
+    T: PartialEq,
 {
     let (tx, rx) = channel();
     (Tx::new(tx), Spy::new(rx))
@@ -32,7 +32,7 @@ pub struct Spy<T = ()> {
 
 impl<T> Spy<T>
 where
-    T: Eq,
+    T: PartialEq,
 {
     pub fn new(rx: Receiver<T>) -> Self {
         Self { rx }
