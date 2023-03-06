@@ -99,3 +99,9 @@ pub enum IgnoredPathErr {
     #[error("Failed to create ignored path.")]
     Regex(#[from] regex::Error),
 }
+
+#[derive(Debug, Error)]
+pub enum CmdErr {
+    #[error("Error while executing cmd.")]
+    Io(#[from] std::io::Error),
+}

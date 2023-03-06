@@ -3,7 +3,6 @@ use crate::entities::repo_root::RepoRoot;
 use crate::result::RunnerErr;
 use crate::use_cases::test_runner::{TRunner, TestRunner, TestsRunStatus};
 
-use cmd_lib::run_cmd;
 use tracing::{debug, instrument};
 
 #[derive(Debug)]
@@ -22,15 +21,16 @@ impl TRunner for DefaultTestRunner {
     fn run_all(&self, repo_root: RepoRoot) -> Result<TestsRunStatus, RunnerErr> {
         let repo_root = repo_root.to_string();
         debug!("running tests in {repo_root}");
-        let test_tool = &self.cfg.tests_cmd.tool;
-        let test_args = &self.cfg.tests_cmd.args;
-        if let Err(e) = run_cmd!(cd $repo_root ; $test_tool $test_args) {
-            debug!("tests failed: {e}");
-            Ok(TestsRunStatus::Failure)
-        } else {
-            debug!("tests succeeded");
-            Ok(TestsRunStatus::Success)
+        let Ok(status) = self.cfg.tests_cmd.status(repo_root) else {
+            debug!("command failed");
+            return Ok(TestsRunStatus::Failure);
+        };
+        if !status.success() {
+            debug!("tests failed with: {status}");
+            return Ok(TestsRunStatus::Failure);
         }
+        debug!("tests succeeded");
+        Ok(TestsRunStatus::Success)
     }
 }
 
@@ -42,6 +42,7 @@ mod test {
     use crate::configuration::tracing::init_tracing;
 
     use anyhow::Result;
+    use cmd_lib::run_cmd;
     use tempfile::tempdir;
 
     #[test]
@@ -49,7 +50,7 @@ mod test {
         // given
         init_tracing();
         let cfg = ConfigBuilder::default()
-            .tests_cmd(Cmd::new("cargo", "test"))
+            .tests_cmd(Cmd::new("cargo", &["test"]))
             .build()?;
         let runner = DefaultTestRunner::make(cfg);
         let invalid_repo_root = RepoRoot::new("/not/existing/path");
@@ -71,7 +72,7 @@ mod test {
         let tmpdir_path = tmpdir.path();
         run_cmd!(cd $tmpdir_path ; cargo new test_project)?;
         let cfg = ConfigBuilder::default()
-            .tests_cmd(Cmd::new("cargo", "test"))
+            .tests_cmd(Cmd::new("cargo", &["test"]))
             .build()?;
         let runner = DefaultTestRunner::make(cfg);
         let project_path = tmpdir_path.join("test_project");
