@@ -6,7 +6,6 @@ use crate::use_cases::services::watcher_shell::ChangeWatcherShell;
 use crate::use_cases::state::State;
 
 #[allow(unused)]
-#[allow(clippy::needless_pass_by_value)]
 pub fn setup_shells(rt: Runtime) -> State {
     let Runtime {
         cfg: _,
