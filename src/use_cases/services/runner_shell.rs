@@ -8,11 +8,11 @@ use tracing::{debug, instrument, trace};
 
 type Result<T> = std::result::Result<T, RunnerErr>;
 
-pub struct TestRunnerShell {
+pub struct TestsShell {
     bus: EventBus,
 }
 
-impl TestRunnerShell {
+impl TestsShell {
     pub fn new(bus: EventBus) -> Self {
         Self { bus }
     }
@@ -58,7 +58,7 @@ mod test {
         let (test_runner_spy, test_runner) = tracked(working(TestsRunStatus::Success));
         let noop_state = noop();
         let shim = create_test_shim()?;
-        TestRunnerShell::new(shim.bus()).run(test_runner, noop_state.reader());
+        TestsShell::new(shim.bus()).run(test_runner, noop_state.reader());
 
         // when
         shim.simulate_change()?;
@@ -76,7 +76,7 @@ mod test {
         let test_runner = working(TestsRunStatus::Success);
         let noop_state = noop();
         let shim = create_test_shim()?;
-        TestRunnerShell::new(shim.bus()).run(test_runner, noop_state.reader());
+        TestsShell::new(shim.bus()).run(test_runner, noop_state.reader());
 
         // when
         shim.simulate_change()?;
@@ -95,7 +95,7 @@ mod test {
         let test_runner = working(TestsRunStatus::Failure);
         let noop_state = noop();
         let shim = create_test_shim()?;
-        TestRunnerShell::new(shim.bus()).run(test_runner, noop_state.reader());
+        TestsShell::new(shim.bus()).run(test_runner, noop_state.reader());
 
         // when
         shim.simulate_change()?;
@@ -114,7 +114,7 @@ mod test {
         let test_runner = failing();
         let noop_state = noop();
         let shim = create_test_shim()?;
-        TestRunnerShell::new(shim.bus()).run(test_runner, noop_state.reader());
+        TestsShell::new(shim.bus()).run(test_runner, noop_state.reader());
 
         // when
         shim.simulate_change()?;

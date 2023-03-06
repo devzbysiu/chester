@@ -1,6 +1,6 @@
 use crate::configuration::factories::Runtime;
 use crate::use_cases::services::coverage_shell::CoverageShell;
-use crate::use_cases::services::runner_shell::TestRunnerShell;
+use crate::use_cases::services::runner_shell::TestsShell;
 use crate::use_cases::services::sink_shell::ResultsSinkShell;
 use crate::use_cases::services::watcher_shell::ChangeWatcherShell;
 use crate::use_cases::state::State;
@@ -18,7 +18,7 @@ pub fn setup_shells(rt: Runtime) -> State {
     } = rt;
 
     let watcher_shell = ChangeWatcherShell::new(bus.clone());
-    let tests_shell = TestRunnerShell::new(bus.clone());
+    let tests_shell = TestsShell::new(bus.clone());
     let coverage_shell = CoverageShell::new(bus.clone());
     let sink_shell = ResultsSinkShell::new(bus.clone());
 
