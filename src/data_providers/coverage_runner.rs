@@ -50,4 +50,51 @@ impl CovRunner for DefaultCoverageRunner {
     }
 }
 
-// TODO: Add tests
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    use crate::configuration::config::{Cmd, ConfigBuilder};
+    use crate::configuration::tracing::init_tracing;
+
+    use anyhow::Result;
+
+    #[test]
+    fn when_cmd_fails_it_returns_failure_status() -> Result<()> {
+        // given
+        init_tracing();
+        let cfg = ConfigBuilder::default()
+            .coverage_cmd(Cmd::new("no-such-command", &[]))
+            .build()?;
+        let cov_runner = DefaultCoverageRunner::make(cfg);
+        let repo_root = RepoRoot::new("/tmp");
+
+        // when
+        let res = cov_runner.run(repo_root)?;
+
+        // then
+        assert_eq!(res, CoverageRunStatus::Failure);
+
+        Ok(())
+    }
+
+    #[test]
+    fn when_there_is_no_output_it_returns_failure_status() -> Result<()> {
+        init_tracing();
+        // given
+        init_tracing();
+        let cfg = ConfigBuilder::default()
+            .coverage_cmd(Cmd::new("true", &[]))
+            .build()?;
+        let cov_runner = DefaultCoverageRunner::make(cfg);
+        let repo_root = RepoRoot::new("/tmp");
+
+        // when
+        let res = cov_runner.run(repo_root)?;
+
+        // then
+        assert_eq!(res, CoverageRunStatus::Failure);
+
+        Ok(())
+    }
+}
