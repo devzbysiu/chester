@@ -40,4 +40,89 @@ impl CoverageShell {
     }
 }
 
-// TODO: Add tests
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    use crate::configuration::tracing::init_tracing;
+    use crate::testingtools::coverage_runner::{failing, tracked, working};
+    use crate::testingtools::state::noop;
+    use crate::testingtools::unit::create_test_shim;
+
+    use anyhow::Result;
+
+    #[test]
+    fn coverage_is_run_when_change_is_detected() -> Result<()> {
+        // given
+        init_tracing();
+        let (cov_runner_spy, cov_runner) = tracked(working(CoverageRunStatus::Success(20.0)));
+        let noop_state = noop();
+        let shim = create_test_shim()?;
+        CoverageShell::new(shim.bus()).run(cov_runner, noop_state.reader());
+
+        // when
+        shim.simulate_change()?;
+
+        // then
+        assert!(cov_runner_spy.run_called());
+
+        Ok(())
+    }
+
+    #[test]
+    fn when_coverage_pass_there_is_corrent_event_on_the_bus() -> Result<()> {
+        // given
+        init_tracing();
+        let cov_runner = working(CoverageRunStatus::Success(20.0));
+        let noop_state = noop();
+        let shim = create_test_shim()?;
+        CoverageShell::new(shim.bus()).run(cov_runner, noop_state.reader());
+
+        // when
+        shim.simulate_change()?;
+        shim.ignore_event()?; // ignore BusEvent::ChangeDetected
+
+        // then
+        assert!(shim.event_on_bus(&BusEvent::GotCoverage(20.0))?);
+
+        Ok(())
+    }
+
+    #[test]
+    fn when_coverage_fail_there_is_correct_event_on_the_bus() -> Result<()> {
+        // given
+        init_tracing();
+        let coverage_runner = working(CoverageRunStatus::Failure);
+        let noop_state = noop();
+        let shim = create_test_shim()?;
+        CoverageShell::new(shim.bus()).run(coverage_runner, noop_state.reader());
+
+        // when
+        shim.simulate_change()?;
+        shim.ignore_event()?; // ignore BusEvent::ChangeDetected
+
+        // then
+        assert!(shim.event_on_bus(&BusEvent::CoverageFailed)?);
+
+        Ok(())
+    }
+
+    #[test]
+    fn when_coverage_runner_fail_there_is_correct_event_on_the_bus() -> Result<()> {
+        // given
+        init_tracing();
+        let coverage_runner = failing();
+        let noop_state = noop();
+        let shim = create_test_shim()?;
+        CoverageShell::new(shim.bus()).run(coverage_runner, noop_state.reader());
+
+        // when
+        shim.simulate_change()?;
+        shim.ignore_event()?; // ignore BusEvent::ChangeDetected
+
+        // then
+        assert!(shim.event_on_bus(&BusEvent::CoverageFailed)?);
+
+        Ok(())
+    }
+}
