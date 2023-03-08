@@ -24,7 +24,7 @@ impl CovRunner for DefaultCoverageRunner {
     fn run(&self, repo_root: RepoRoot) -> Result<CoverageRunStatus, CoverageErr> {
         let repo_root = repo_root.to_string();
         debug!("running coverage in {repo_root}");
-        let re = Regex::new(r"(\d{2}.\d{2})% coverage")?;
+        let re = Regex::new(r"(\d+.\d{2})% coverage")?;
         let Ok(output) = self.cfg.coverage_cmd.stdout(repo_root) else {
             error!("command failed");
             return Ok(CoverageRunStatus::Failure);
@@ -37,15 +37,18 @@ impl CovRunner for DefaultCoverageRunner {
             error!("no captures in {last_line}");
             return Ok(CoverageRunStatus::Failure);
         };
-        let Some(coverage) = caps.get(COVERAGE) else {
-            error!("capture not found");
-            return Ok(CoverageRunStatus::Failure);
-        };
-        let coverage = coverage.as_str();
-        let Ok(coverage) = coverage.parse::<f32>() else {
-            error!("failed to parse: {coverage}");
-            return Ok(CoverageRunStatus::Failure)
-        };
+        // NOTE: the capture with idx `1` is always present, because we have only one group,
+        // so if there is any match (checked above) then we are sure, that the idx `1` is present
+        // (idx `0` is always whole match (all groups))
+        let coverage = &caps[COVERAGE];
+        // NOTE: if we captured two groups of digits divided by a dot, we can be sure that
+        // it will parse to a `f32`
+        let coverage = coverage.parse::<f32>().unwrap();
+        if !(0.0..=100.0).contains(&coverage) {
+            return Err(CoverageErr::InvalidValue(format!(
+                "{coverage} value is invalid for code coverage"
+            )));
+        }
         Ok(CoverageRunStatus::Success(coverage))
     }
 }
@@ -82,7 +85,6 @@ mod test {
     fn when_there_is_no_output_it_returns_failure_status() -> Result<()> {
         init_tracing();
         // given
-        init_tracing();
         let cfg = ConfigBuilder::default()
             .coverage_cmd(Cmd::new("true", &[]))
             .build()?;
@@ -94,6 +96,139 @@ mod test {
 
         // then
         assert_eq!(res, CoverageRunStatus::Failure);
+
+        Ok(())
+    }
+
+    #[test]
+    fn when_output_does_not_contain_coverage_percentage_it_returns_failure_status() -> Result<()> {
+        // given
+        init_tracing();
+        let cfg = ConfigBuilder::default()
+            .coverage_cmd(Cmd::new("echo", &["some line"]))
+            .build()?;
+        let cov_runner = DefaultCoverageRunner::make(cfg);
+        let repo_root = RepoRoot::new("/tmp");
+
+        // when
+        let res = cov_runner.run(repo_root)?;
+
+        // then
+        assert_eq!(res, CoverageRunStatus::Failure);
+
+        Ok(())
+    }
+
+    #[test]
+    fn with_correct_percentage_output_it_returns_sucess_along_with_percentage() -> Result<()> {
+        // given
+        init_tracing();
+        let cfg = ConfigBuilder::default()
+            .coverage_cmd(Cmd::new("echo", &["10.11% coverage"]))
+            .build()?;
+        let cov_runner = DefaultCoverageRunner::make(cfg);
+        let repo_root = RepoRoot::new("/tmp");
+
+        // when
+        let res = cov_runner.run(repo_root)?;
+
+        // then
+        assert_eq!(res, CoverageRunStatus::Success(10.11));
+
+        Ok(())
+    }
+
+    #[test]
+    fn it_works_with_single_digit_percentage() -> Result<()> {
+        // given
+        init_tracing();
+        let cfg = ConfigBuilder::default()
+            .coverage_cmd(Cmd::new("echo", &["1.11% coverage"]))
+            .build()?;
+        let cov_runner = DefaultCoverageRunner::make(cfg);
+        let repo_root = RepoRoot::new("/tmp");
+
+        // when
+        let res = cov_runner.run(repo_root)?;
+
+        // then
+        assert_eq!(res, CoverageRunStatus::Success(1.11));
+
+        Ok(())
+    }
+
+    #[test]
+    fn it_works_when_decimal_digits_are_0() -> Result<()> {
+        // given
+        init_tracing();
+        let cfg = ConfigBuilder::default()
+            .coverage_cmd(Cmd::new("echo", &["1.00% coverage"]))
+            .build()?;
+        let cov_runner = DefaultCoverageRunner::make(cfg);
+        let repo_root = RepoRoot::new("/tmp");
+
+        // when
+        let res = cov_runner.run(repo_root)?;
+
+        // then
+        assert_eq!(res, CoverageRunStatus::Success(1.00));
+
+        Ok(())
+    }
+
+    #[test]
+    fn it_works_with_hundred_percents() -> Result<()> {
+        // given
+        init_tracing();
+        let cfg = ConfigBuilder::default()
+            .coverage_cmd(Cmd::new("echo", &["100.00% coverage"]))
+            .build()?;
+        let cov_runner = DefaultCoverageRunner::make(cfg);
+        let repo_root = RepoRoot::new("/tmp");
+
+        // when
+        let res = cov_runner.run(repo_root)?;
+
+        // then
+        assert_eq!(res, CoverageRunStatus::Success(100.00));
+
+        Ok(())
+    }
+
+    #[test]
+    fn it_fails_with_three_digits_after_decimal_point() -> Result<()> {
+        // given
+        init_tracing();
+        let cfg = ConfigBuilder::default()
+            .coverage_cmd(Cmd::new("echo", &["1.001% coverage"]))
+            .build()?;
+        let cov_runner = DefaultCoverageRunner::make(cfg);
+        let repo_root = RepoRoot::new("/tmp");
+
+        // when
+        let res = cov_runner.run(repo_root)?;
+
+        // then
+        assert_eq!(res, CoverageRunStatus::Failure);
+
+        Ok(())
+    }
+
+    #[test]
+    fn it_fails_with_more_then_hundred_percent() -> Result<()> {
+        // given
+        init_tracing();
+        let cfg = ConfigBuilder::default()
+            .coverage_cmd(Cmd::new("echo", &["101.01% coverage"]))
+            .build()?;
+        let cov_runner = DefaultCoverageRunner::make(cfg);
+        let repo_root = RepoRoot::new("/tmp");
+
+        // when
+        let res = cov_runner.run(repo_root);
+
+        // then
+        assert!(matches!(res, Err(CoverageErr::InvalidValue(_))));
 
         Ok(())
     }

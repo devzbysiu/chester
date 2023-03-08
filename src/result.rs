@@ -40,6 +40,9 @@ pub enum CoverageErr {
 
     #[error("Error when reading state.")]
     Read(#[from] StateReaderErr),
+
+    #[error("Invalid coverage value.")]
+    InvalidValue(String),
 }
 
 #[derive(Debug, Error)]
