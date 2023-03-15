@@ -225,4 +225,26 @@ mod test {
 
         Ok(())
     }
+
+    #[test]
+    fn when_repo_root_is_set_to_the_same_value_watcher_is_not_reattached() -> Result<()> {
+        // given
+        init_tracing();
+        let shim = create_test_shim()?;
+        let watcher = FsChangeWatcher::make(shim.repo_root(), Config::default())?;
+        let (controller, detector) = run_watcher(watcher, shim.repo_root());
+        mk_file(shim.repo_file(Faker.fake::<String>()))?;
+        assert!(detector.change_detected());
+
+        // when
+        controller.change_repo(shim.repo_root())?;
+        mk_file(shim.repo_file(Faker.fake::<String>()))?;
+        assert!(detector.change_detected());
+        mk_file(shim.new_repo_file(Faker.fake::<String>()))?;
+
+        // then
+        assert!(detector.no_change_detected());
+
+        Ok(())
+    }
 }
