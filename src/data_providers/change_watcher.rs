@@ -33,7 +33,7 @@ impl FsChangeWatcher {
     }
 
     #[instrument(skip(self))]
-    fn update_watcher(&self, current_root: RepoRoot) -> Result<(), WatcherErr> {
+    fn reattach_watcher(&self, current_root: RepoRoot) -> Result<(), WatcherErr> {
         debug!("repo root changed, recreating watcher");
         let (new_rx, new_watcher) = setup_watcher(&current_root)?;
         let mut rx = self.rx.borrow_mut();
@@ -79,7 +79,7 @@ impl Watcher for FsChangeWatcher {
     #[instrument(level = "trace", skip(self))]
     fn wait_for_change(&self, current_root: RepoRoot) -> Result<(), WatcherErr> {
         if *self.repo_root.borrow() != current_root {
-            self.update_watcher(current_root)?;
+            self.reattach_watcher(current_root)?;
         }
         let rx = self.rx.borrow();
         loop {
@@ -98,11 +98,10 @@ mod test {
     use crate::configuration::config::ConfigBuilder;
     use crate::configuration::tracing::init_tracing;
     use crate::entities::ignored_path::IgnoredPath;
-    use crate::testingtools::unit::{create_test_shim, ChangeDetector};
+    use crate::testingtools::unit::{create_test_shim, mk_file, run_watcher};
 
     use anyhow::Result;
     use fake::{Fake, Faker};
-    use std::thread::{self, JoinHandle};
 
     #[test]
     fn write_to_file_is_detected_as_change() -> Result<()> {
@@ -112,28 +111,13 @@ mod test {
         let watcher = FsChangeWatcher::make(shim.repo_root(), Config::default())?;
 
         // when
-        let (_handle, detector) = run_watcher(shim.repo_root(), watcher);
-        shim.mk_file(Faker.fake::<String>())?;
+        let (_controller, detector) = run_watcher(watcher, shim.repo_root());
+        mk_file(shim.repo_file(Faker.fake::<String>()))?;
 
         // then
         assert!(detector.change_detected());
 
         Ok(())
-    }
-
-    fn run_watcher(
-        repo_root: RepoRoot,
-        watcher: ChangeWatcher,
-    ) -> (JoinHandle<Result<()>>, ChangeDetector) {
-        let (tx, rx) = channel();
-        (
-            thread::spawn(move || -> Result<()> {
-                watcher.wait_for_change(repo_root)?;
-                tx.send(())?;
-                Ok(())
-            }),
-            ChangeDetector(rx),
-        )
     }
 
     #[test]
@@ -147,8 +131,8 @@ mod test {
         let watcher = FsChangeWatcher::make(shim.repo_root(), cfg)?;
 
         // when
-        let (_handle, detector) = run_watcher(shim.repo_root(), watcher);
-        shim.mk_file("target")?;
+        let (_controller, detector) = run_watcher(watcher, shim.repo_root());
+        mk_file(shim.repo_file("target"))?;
 
         // then
         assert!(detector.no_change_detected());
@@ -167,8 +151,8 @@ mod test {
         let watcher = FsChangeWatcher::make(shim.repo_root(), cfg)?;
 
         // when
-        let (_handle, detector) = run_watcher(shim.repo_root(), watcher);
-        shim.mk_file(shim.dir_in_repo().join("some-file"))?;
+        let (_controller, detector) = run_watcher(watcher, shim.repo_root());
+        mk_file(shim.repo_file(shim.dir_in_repo().join("some-file")))?;
 
         // then
         assert!(detector.no_change_detected());
@@ -191,8 +175,8 @@ mod test {
         let watcher = FsChangeWatcher::make(shim.repo_root(), cfg)?;
 
         // when
-        let (_handle, detector) = run_watcher(shim.repo_root(), watcher);
-        shim.mk_file("target")?;
+        let (_controller, detector) = run_watcher(watcher, shim.repo_root());
+        mk_file(shim.repo_file("target"))?;
 
         // then
         assert!(detector.no_change_detected());
@@ -211,11 +195,33 @@ mod test {
         let watcher = FsChangeWatcher::make(shim.repo_root(), cfg)?;
 
         // when
-        let (_handle, detector) = run_watcher(shim.repo_root(), watcher);
-        shim.mk_file("123something456")?;
+        let (_controller, detector) = run_watcher(watcher, shim.repo_root());
+        mk_file(shim.repo_file("123something456"))?;
 
         // then
         assert!(detector.no_change_detected());
+
+        Ok(())
+    }
+
+    #[test]
+    fn when_repo_root_is_changed_watcher_is_reattached() -> Result<()> {
+        // given
+        init_tracing();
+        let shim = create_test_shim()?;
+        let watcher = FsChangeWatcher::make(shim.repo_root(), Config::default())?;
+        let (controller, detector) = run_watcher(watcher, shim.repo_root());
+        mk_file(shim.repo_file(Faker.fake::<String>()))?;
+        assert!(detector.change_detected());
+
+        // when
+        controller.change_repo(shim.new_repo_root())?;
+        mk_file(shim.repo_file(Faker.fake::<String>()))?;
+        assert!(detector.no_change_detected());
+        mk_file(shim.new_repo_file(Faker.fake::<String>()))?;
+
+        // then
+        assert!(detector.change_detected());
 
         Ok(())
     }
