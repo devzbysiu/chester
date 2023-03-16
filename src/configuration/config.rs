@@ -9,7 +9,15 @@ pub fn cfg() -> Result<Config, CfgErr> {
     Ok(ConfigBuilder::default()
         .tests_cmd(Cmd::new("cargo", &["test"]))
         .check_cmd(Cmd::new("cargo", &["check"]))
-        .coverage_cmd(Cmd::new("cargo", &["tarpaulin", "--skip-clean"]))
+        .coverage_cmd(Cmd::new(
+            "cargo",
+            &[
+                "tarpaulin",
+                "--skip-clean",
+                "--target-dir",
+                "./tarpaulin-target",
+            ],
+        ))
         .ignored_paths(vec![IgnoredPath::new("target")?, IgnoredPath::new(".git")?])
         .build()?)
 }

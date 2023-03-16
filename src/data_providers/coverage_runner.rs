@@ -34,7 +34,7 @@ impl CovRunner for DefaultCoverageRunner {
             return Ok(CoverageRunStatus::Failure);
         };
         let Some(caps) = re.captures(last_line) else {
-            error!("no captures in {last_line}");
+            error!("no captures in '{last_line}'");
             return Ok(CoverageRunStatus::Failure);
         };
         // NOTE: the capture with idx `1` is always present, because we have only one group,
