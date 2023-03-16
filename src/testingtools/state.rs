@@ -183,7 +183,10 @@ impl StateSpies {
         self.write_tests_status_spy.method_called_with_val(status)
     }
 
-    #[allow(unused)]
+    pub fn check_status_called_with_val(&self, status: &CheckState) -> bool {
+        self.write_check_status_spy.method_called_with_val(status)
+    }
+
     pub fn coverage_status_called_with_val(&self, status: &CoverageState) -> bool {
         self.write_coverage_status_spy
             .method_called_with_val(status)

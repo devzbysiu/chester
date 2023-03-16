@@ -79,7 +79,7 @@ mod test {
         CoverageShell::new(shim.bus()).run(cov_runner, noop_state.reader());
 
         // when
-        shim.simulate_tests_succeeded()?;
+        shim.simulate_tests_passed()?;
 
         // then
         assert!(cov_runner_spy.run_called());
@@ -96,7 +96,7 @@ mod test {
         CoverageShell::new(shim.bus()).run(cov_runner, noop_state.reader());
 
         // when
-        shim.simulate_tests_succeeded()?;
+        shim.simulate_tests_passed()?;
         shim.ignore_event()?; // ignore BusEvent::ChangeDetected
 
         // then
@@ -115,7 +115,7 @@ mod test {
         CoverageShell::new(shim.bus()).run(coverage_runner, noop_state.reader());
 
         // when
-        shim.simulate_tests_succeeded()?;
+        shim.simulate_tests_passed()?;
         shim.ignore_event()?; // ignore BusEvent::ChangeDetected
 
         // then
@@ -134,7 +134,7 @@ mod test {
         CoverageShell::new(shim.bus()).run(coverage_runner, noop_state.reader());
 
         // when
-        shim.simulate_tests_succeeded()?;
+        shim.simulate_tests_passed()?;
         shim.ignore_event()?; // ignore BusEvent::ChangeDetected
 
         // then
