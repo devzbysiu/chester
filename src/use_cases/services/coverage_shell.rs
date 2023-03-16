@@ -23,7 +23,7 @@ impl CoverageShell {
         let publ = self.bus.publisher();
         thread::spawn(move || -> Result<()> {
             loop {
-                if let Ok(BusEvent::ChangeDetected) = sub.recv() {
+                if let Ok(BusEvent::TestsPassed) = sub.recv() {
                     debug!("running coverage");
                     if let Ok(CoverageRunStatus::Success(val)) = cov_runner.run(st.repo_root()?) {
                         debug!("coverage calculated");
@@ -52,7 +52,7 @@ mod test {
     use anyhow::Result;
 
     #[test]
-    fn coverage_is_run_when_change_is_detected() -> Result<()> {
+    fn coverage_is_not_started_when_change_is_detected() -> Result<()> {
         // given
         init_tracing();
         let (cov_runner_spy, cov_runner) = tracked(working(CoverageRunStatus::Success(20.0)));
@@ -64,11 +64,28 @@ mod test {
         shim.simulate_change()?;
 
         // then
-        assert!(cov_runner_spy.run_called());
+        assert!(!cov_runner_spy.run_called());
 
         Ok(())
     }
 
+    #[test]
+    fn coverage_is_started_when_tests_passed() -> Result<()> {
+        // given
+        init_tracing();
+        let (cov_runner_spy, cov_runner) = tracked(working(CoverageRunStatus::Success(20.0)));
+        let noop_state = noop();
+        let shim = create_test_shim()?;
+        CoverageShell::new(shim.bus()).run(cov_runner, noop_state.reader());
+
+        // when
+        shim.simulate_tests_succeeded()?;
+
+        // then
+        assert!(cov_runner_spy.run_called());
+
+        Ok(())
+    }
     #[test]
     fn when_coverage_pass_there_is_corrent_event_on_the_bus() -> Result<()> {
         // given
@@ -79,7 +96,7 @@ mod test {
         CoverageShell::new(shim.bus()).run(cov_runner, noop_state.reader());
 
         // when
-        shim.simulate_change()?;
+        shim.simulate_tests_succeeded()?;
         shim.ignore_event()?; // ignore BusEvent::ChangeDetected
 
         // then
@@ -98,7 +115,7 @@ mod test {
         CoverageShell::new(shim.bus()).run(coverage_runner, noop_state.reader());
 
         // when
-        shim.simulate_change()?;
+        shim.simulate_tests_succeeded()?;
         shim.ignore_event()?; // ignore BusEvent::ChangeDetected
 
         // then
@@ -117,7 +134,7 @@ mod test {
         CoverageShell::new(shim.bus()).run(coverage_runner, noop_state.reader());
 
         // when
-        shim.simulate_change()?;
+        shim.simulate_tests_succeeded()?;
         shim.ignore_event()?; // ignore BusEvent::ChangeDetected
 
         // then
