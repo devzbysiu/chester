@@ -167,7 +167,7 @@ mod test {
     use fake::{Fake, Faker};
 
     #[test]
-    fn pending_status_is_set_as_default() -> Result<()> {
+    fn pending_tests_status_is_set_as_default() -> Result<()> {
         // given
         init_tracing();
         let bus = event_bus()?;
@@ -179,6 +179,40 @@ mod test {
 
         // then
         assert_eq!(status, TestsState::Pending);
+
+        Ok(())
+    }
+
+    #[test]
+    fn pending_check_status_is_set_as_default() -> Result<()> {
+        // given
+        init_tracing();
+        let bus = event_bus()?;
+        let state = InMemoryState::make(bus.publisher());
+        let state = state.reader();
+
+        // when
+        let status = state.check()?;
+
+        // then
+        assert_eq!(status, CheckState::Pending);
+
+        Ok(())
+    }
+
+    #[test]
+    fn pending_coverage_status_is_set_as_default() -> Result<()> {
+        // given
+        init_tracing();
+        let bus = event_bus()?;
+        let state = InMemoryState::make(bus.publisher());
+        let state = state.reader();
+
+        // when
+        let status = state.coverage()?;
+
+        // then
+        assert_eq!(status, CoverageState::Pending);
 
         Ok(())
     }
@@ -201,7 +235,7 @@ mod test {
     }
 
     #[test]
-    fn status_written_to_state_can_be_read() -> Result<()> {
+    fn tests_status_written_to_state_can_be_read() -> Result<()> {
         // given
         init_tracing();
         let bus = event_bus()?;
@@ -215,6 +249,44 @@ mod test {
 
         // then
         assert_eq!(state_reader.tests()?, TestsState::Success);
+
+        Ok(())
+    }
+
+    #[test]
+    fn check_status_written_to_state_can_be_read() -> Result<()> {
+        // given
+        init_tracing();
+        let bus = event_bus()?;
+        let state = InMemoryState::make(bus.publisher());
+        let state_reader = state.reader();
+        let state_writer = state.writer();
+        assert_eq!(state_reader.check()?, CheckState::Pending);
+
+        // when
+        state_writer.check(CheckState::Success)?;
+
+        // then
+        assert_eq!(state_reader.check()?, CheckState::Success);
+
+        Ok(())
+    }
+
+    #[test]
+    fn coverage_status_written_to_state_can_be_read() -> Result<()> {
+        // given
+        init_tracing();
+        let bus = event_bus()?;
+        let state = InMemoryState::make(bus.publisher());
+        let state_reader = state.reader();
+        let state_writer = state.writer();
+        assert_eq!(state_reader.coverage()?, CoverageState::Pending);
+
+        // when
+        state_writer.coverage(CoverageState::Success(90.0))?;
+
+        // then
+        assert_eq!(state_reader.coverage()?, CoverageState::Success(90.0));
 
         Ok(())
     }
@@ -256,6 +328,4 @@ mod test {
 
         Ok(())
     }
-
-    // TODO: Add tests for check status change
 }
