@@ -46,7 +46,7 @@ mod test {
     use tempfile::tempdir;
 
     #[test]
-    fn when_tests_fail_then_failure_status_is_returned() -> Result<()> {
+    fn when_tests_command_fail_then_failure_status_is_returned() -> Result<()> {
         // given
         init_tracing();
         let cfg = ConfigBuilder::default()
@@ -57,6 +57,33 @@ mod test {
 
         // when
         let res = runner.run(invalid_repo_root)?;
+
+        // then
+        assert_eq!(res, TestsRunStatus::Failure);
+
+        Ok(())
+    }
+
+    #[test]
+    fn when_tests_fail_then_failure_status_is_returned() -> Result<()> {
+        // given
+        init_tracing();
+        let tmpdir = tempdir()?;
+        let tmpdir_path = tmpdir.path();
+        run_cmd!(
+            cd $tmpdir_path;
+            cargo new test_project;
+            echo "#[test]\nfn test() { assert!(false); }" >> $tmpdir_path/test_project/src/main.rs
+        )?;
+        let cfg = ConfigBuilder::default()
+            .tests_cmd(Cmd::new("cargo", &["test"]))
+            .build()?;
+        let runner = DefaultTestRunner::make(cfg);
+        let project_path = tmpdir_path.join("test_project");
+        let root = RepoRoot::new(project_path);
+
+        // when
+        let res = runner.run(root)?;
 
         // then
         assert_eq!(res, TestsRunStatus::Failure);

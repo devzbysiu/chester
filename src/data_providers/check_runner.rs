@@ -25,6 +25,7 @@ impl CRunner for DefaultCheckRunner {
             debug!("command failed");
             return Ok(CheckRunStatus::Failure);
         };
+        // TODO: Cover this case with tests
         if !status.success() {
             debug!("check failed with: {status}");
             return Ok(CheckRunStatus::Failure);
