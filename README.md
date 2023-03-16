@@ -37,10 +37,10 @@ project you are working on and after every change it runs the tests. The results
 are exposed via REST API on local socket, so you can build your own software on
 top of that.
 
-Example use of chester: [Always On Tests](https://github.com/devzbysiu/aot) -
-periodically gets test results and display them using small desktop widget.
+Example use of chester: [Always On Stats](https://github.com/devzbysiu/aos) -
+display code statistics using small desktop widget.
 
-![AOT](res/aot.gif)
+![AOT](res/aos.gif)
 
 The test is changed to make tests fail. After save, in the top right corner you
 can see the widget starts blinking which means that tests started. After the
