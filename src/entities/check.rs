@@ -29,32 +29,32 @@ impl Default for CheckState {
     }
 }
 
-// #[cfg(test)]
-// mod test {
-//     use super::*;
+#[cfg(test)]
+mod test {
+    use super::*;
 
-//     use crate::configuration::tracing::init_tracing;
+    use crate::configuration::tracing::init_tracing;
 
-//     #[test]
-//     fn default_status_is_pending() {
-//         // given
-//         init_tracing();
+    #[test]
+    fn default_check_status_is_pending() {
+        // given
+        init_tracing();
 
-//         // when
-//         let status = TestsState::default();
+        // when
+        let status = CheckState::default();
 
-//         // then
-//         assert_eq!(status, TestsState::Pending);
-//     }
+        // then
+        assert_eq!(status, CheckState::Pending);
+    }
 
-//     #[test]
-//     fn tests_status_has_display_trait_implemented() {
-//         // given
-//         init_tracing();
+    #[test]
+    fn check_status_has_display_trait_implemented() {
+        // given
+        init_tracing();
 
-//         // then
-//         assert_eq!(TestsState::Pending.to_string(), "pending");
-//         assert_eq!(TestsState::Failure.to_string(), "failure");
-//         assert_eq!(TestsState::Success.to_string(), "success");
-//     }
-// }
+        // then
+        assert_eq!(CheckState::Pending.to_string(), "pending");
+        assert_eq!(CheckState::Failure.to_string(), "failure");
+        assert_eq!(CheckState::Success.to_string(), "success");
+    }
+}

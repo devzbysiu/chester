@@ -14,11 +14,6 @@ impl RepoRoot {
         let root = repo_root.as_ref().to_path_buf();
         Self { root }
     }
-
-    #[allow(unused)]
-    pub fn exists(&self) -> bool {
-        self.root.exists()
-    }
 }
 
 impl Display for RepoRoot {
