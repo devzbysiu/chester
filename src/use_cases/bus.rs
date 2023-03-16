@@ -7,7 +7,7 @@ pub type EventBus = Arc<dyn Bus>;
 pub type EventSubscriber = Arc<dyn Subscriber>;
 pub type EventPublisher = Arc<dyn Publisher>;
 
-pub trait Bus: Send + Sync + Debug {
+pub trait Bus: Send + Sync {
     fn publisher(&self) -> EventPublisher;
 
     fn subscriber(&self) -> EventSubscriber;
