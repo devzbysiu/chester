@@ -60,6 +60,18 @@ the widget. Chester is designed as an API you can build upon.
 curl --unix-socket "/run/user/$(id -u)/chester.sock" http://chester/tests/status
 ```
 
+### Check status
+
+```bash
+curl --unix-socket "/run/user/$(id -u)/chester.sock" http://chester/check/status
+```
+
+### Coverage status
+
+```bash
+curl --unix-socket "/run/user/$(id -u)/chester.sock" http://chester/coverage/status
+```
+
 ### Update repository on which tests are run
 
 ```bash
@@ -71,8 +83,10 @@ curl --unix-socket "/run/user/$(id -u)/chester.sock" \
 
 ## Roadmap
 
+- [x] Check status
+- [ ] Clippy status
 - [x] Tests status
-- [ ] Code coverage
+- [x] Code coverage
 - [ ] Project quality
   - [ ] Cyclomatic Complexity
   - [ ] Halstead Metrics (Effort to maintain code, difficulty to understand code
