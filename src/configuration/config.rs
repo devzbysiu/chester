@@ -23,7 +23,6 @@ pub struct Config {
     pub coverage_cmd: Cmd,
 }
 
-// TODO: Move this somewhere else?
 #[derive(Debug, Default, Clone)]
 pub struct Cmd {
     tool: String,
