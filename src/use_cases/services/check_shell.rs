@@ -40,91 +40,89 @@ impl CheckShell {
     }
 }
 
-// TODO: Add tests
+#[cfg(test)]
+mod test {
+    use super::*;
 
-// #[cfg(test)]
-// mod test {
-//     use super::*;
+    use crate::configuration::tracing::init_tracing;
+    use crate::testingtools::check_runner::{failing, tracked, working};
+    use crate::testingtools::state::noop;
+    use crate::testingtools::unit::create_test_shim;
 
-//     use crate::configuration::tracing::init_tracing;
-//     use crate::testingtools::state::noop;
-//     use crate::testingtools::test_runner::{failing, tracked, working};
-//     use crate::testingtools::unit::create_test_shim;
+    use anyhow::Result;
 
-//     use anyhow::Result;
+    #[test]
+    fn check_is_run_when_any_change_is_detected() -> Result<()> {
+        // given
+        init_tracing();
+        let (check_runner_spy, check_runner) = tracked(working(CheckRunStatus::Success));
+        let noop_state = noop();
+        let shim = create_test_shim()?;
+        CheckShell::new(shim.bus()).run(check_runner, noop_state.reader());
 
-//     #[test]
-//     fn tests_are_run_when_any_change_is_detected() -> Result<()> {
-//         // given
-//         init_tracing();
-//         let (test_runner_spy, test_runner) = tracked(working(TestsRunStatus::Success));
-//         let noop_state = noop();
-//         let shim = create_test_shim()?;
-//         TestsShell::new(shim.bus()).run(test_runner, noop_state.reader());
+        // when
+        shim.simulate_change()?;
 
-//         // when
-//         shim.simulate_change()?;
+        // then
+        assert!(check_runner_spy.run_called());
 
-//         // then
-//         assert!(test_runner_spy.run_called());
+        Ok(())
+    }
 
-//         Ok(())
-//     }
+    #[test]
+    fn when_check_pass_there_is_correct_event_on_the_bus() -> Result<()> {
+        // given
+        init_tracing();
+        let check_runner = working(CheckRunStatus::Success);
+        let noop_state = noop();
+        let shim = create_test_shim()?;
+        CheckShell::new(shim.bus()).run(check_runner, noop_state.reader());
 
-//     #[test]
-//     fn when_tests_pass_there_is_correct_event_on_the_bus() -> Result<()> {
-//         // given
-//         init_tracing();
-//         let test_runner = working(TestsRunStatus::Success);
-//         let noop_state = noop();
-//         let shim = create_test_shim()?;
-//         TestsShell::new(shim.bus()).run(test_runner, noop_state.reader());
+        // when
+        shim.simulate_change()?;
+        shim.ignore_event()?; // ignore BusEvent::ChangeDetected
 
-//         // when
-//         shim.simulate_change()?;
-//         shim.ignore_event()?; // ignore BusEvent::ChangeDetected
+        // then
+        assert!(shim.event_on_bus(&BusEvent::CheckPassed)?);
 
-//         // then
-//         assert!(shim.event_on_bus(&BusEvent::TestsPassed)?);
+        Ok(())
+    }
 
-//         Ok(())
-//     }
+    #[test]
+    fn when_check_fail_there_is_correct_event_on_the_bus() -> Result<()> {
+        // given
+        init_tracing();
+        let check_runner = working(CheckRunStatus::Failure);
+        let noop_state = noop();
+        let shim = create_test_shim()?;
+        CheckShell::new(shim.bus()).run(check_runner, noop_state.reader());
 
-//     #[test]
-//     fn when_tests_fail_there_is_correct_event_on_the_bus() -> Result<()> {
-//         // given
-//         init_tracing();
-//         let test_runner = working(TestsRunStatus::Failure);
-//         let noop_state = noop();
-//         let shim = create_test_shim()?;
-//         TestsShell::new(shim.bus()).run(test_runner, noop_state.reader());
+        // when
+        shim.simulate_change()?;
+        shim.ignore_event()?; // ignore BusEvent::ChangeDetected
 
-//         // when
-//         shim.simulate_change()?;
-//         shim.ignore_event()?; // ignore BusEvent::ChangeDetected
+        // then
+        assert!(shim.event_on_bus(&BusEvent::CheckFailed)?);
 
-//         // then
-//         assert!(shim.event_on_bus(&BusEvent::TestsFailed)?);
+        Ok(())
+    }
 
-//         Ok(())
-//     }
+    #[test]
+    fn when_check_runner_fails_correct_event_is_sent() -> Result<()> {
+        // given
+        init_tracing();
+        let check_runner = failing();
+        let noop_state = noop();
+        let shim = create_test_shim()?;
+        CheckShell::new(shim.bus()).run(check_runner, noop_state.reader());
 
-//     #[test]
-//     fn when_test_runner_fails_correct_event_is_sent() -> Result<()> {
-//         // given
-//         init_tracing();
-//         let test_runner = failing();
-//         let noop_state = noop();
-//         let shim = create_test_shim()?;
-//         TestsShell::new(shim.bus()).run(test_runner, noop_state.reader());
+        // when
+        shim.simulate_change()?;
+        shim.ignore_event()?; // ignore BusEvent::ChangeDetected
 
-//         // when
-//         shim.simulate_change()?;
-//         shim.ignore_event()?; // ignore BusEvent::ChangeDetected
+        // then
+        assert!(shim.event_on_bus(&BusEvent::CheckFailed)?);
 
-//         // then
-//         assert!(shim.event_on_bus(&BusEvent::TestsFailed)?);
-
-//         Ok(())
-//     }
-// }
+        Ok(())
+    }
+}

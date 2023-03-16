@@ -3,6 +3,7 @@ use std::sync::Mutex;
 use std::time::Duration;
 use tracing::error;
 
+pub mod check_runner;
 pub mod coverage_runner;
 pub mod state;
 pub mod test_runner;
