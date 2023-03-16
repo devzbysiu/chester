@@ -25,7 +25,7 @@ impl TestsShell {
             loop {
                 if let Ok(BusEvent::CheckPassed) = sub.recv() {
                     debug!("running tests");
-                    if let Ok(TestsRunStatus::Success) = test_runner.run_all(state.repo_root()?) {
+                    if let Ok(TestsRunStatus::Success) = test_runner.run(state.repo_root()?) {
                         debug!("tests passed");
                         publ.send(BusEvent::TestsPassed)?;
                     } else {

@@ -23,8 +23,8 @@ impl TrackedTestRunner {
 }
 
 impl TRunner for TrackedTestRunner {
-    fn run_all(&self, repo_root: RepoRoot) -> Result<TestsRunStatus, RunnerErr> {
-        let res = self.runner.run_all(repo_root);
+    fn run(&self, repo_root: RepoRoot) -> Result<TestsRunStatus, RunnerErr> {
+        let res = self.runner.run(repo_root);
         self.tx.signal(());
         res
     }
@@ -59,7 +59,7 @@ impl WorkingTestRunner {
 }
 
 impl TRunner for WorkingTestRunner {
-    fn run_all(&self, _repo_root: RepoRoot) -> Result<TestsRunStatus, RunnerErr> {
+    fn run(&self, _repo_root: RepoRoot) -> Result<TestsRunStatus, RunnerErr> {
         Ok(self.result.clone())
     }
 }
@@ -77,7 +77,7 @@ impl FailingTestRunner {
 }
 
 impl TRunner for FailingTestRunner {
-    fn run_all(&self, _repo_root: RepoRoot) -> Result<TestsRunStatus, RunnerErr> {
+    fn run(&self, _repo_root: RepoRoot) -> Result<TestsRunStatus, RunnerErr> {
         Err(RunnerErr::Bus(BusErr::Generic(anyhow!("Failure"))))
     }
 }

@@ -18,7 +18,7 @@ impl DefaultTestRunner {
 
 impl TRunner for DefaultTestRunner {
     #[instrument(skip(self))]
-    fn run_all(&self, repo_root: RepoRoot) -> Result<TestsRunStatus, RunnerErr> {
+    fn run(&self, repo_root: RepoRoot) -> Result<TestsRunStatus, RunnerErr> {
         let repo_root = repo_root.to_string();
         debug!("running tests in {repo_root}");
         let Ok(status) = self.cfg.tests_cmd.status(repo_root) else {
@@ -56,7 +56,7 @@ mod test {
         let invalid_repo_root = RepoRoot::new("/not/existing/path");
 
         // when
-        let res = runner.run_all(invalid_repo_root)?;
+        let res = runner.run(invalid_repo_root)?;
 
         // then
         assert_eq!(res, TestsRunStatus::Failure);
@@ -79,7 +79,7 @@ mod test {
         let root = RepoRoot::new(project_path);
 
         // when
-        let res = runner.run_all(root)?;
+        let res = runner.run(root)?;
 
         // then
         assert_eq!(res, TestsRunStatus::Success);
