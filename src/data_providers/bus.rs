@@ -5,7 +5,7 @@ use crate::use_cases::bus::{
 
 use std::sync::{Arc, Mutex};
 
-const BUS_CAPACITY: u64 = 1024; // TODO: take care of this `capacity`
+const BUS_CAPACITY: u64 = 1024;
 
 pub struct LocalBus {
     eventador: eventador::Eventador,
