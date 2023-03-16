@@ -1,6 +1,7 @@
+use crate::entities::check::CheckState;
 use crate::entities::coverage::CoverageState;
 use crate::entities::repo_root::RepoRoot;
-use crate::entities::status::TestsState;
+use crate::entities::tests::TestsState;
 use crate::result::{StateReaderErr, StateWriterErr};
 use crate::testingtools::{pipe, MutexExt, Spy, Tx};
 use crate::use_cases::state::{
@@ -24,6 +25,7 @@ impl TrackedState {
         let (read_status_tx, read_status_spy) = pipe();
 
         let (write_tests_status_tx, write_tests_status_spy) = pipe::<TestsState>();
+        let (write_check_status_tx, write_check_status_spy) = pipe::<CheckState>();
         let (write_coverage_status_tx, write_coverage_status_spy) = pipe::<CoverageState>();
 
         let (write_repo_root_tx, write_repo_root_spy) = pipe::<RepoRoot>();
@@ -32,6 +34,7 @@ impl TrackedState {
             StateSpies::new(
                 read_status_spy,
                 write_tests_status_spy,
+                write_check_status_spy,
                 write_coverage_status_spy,
                 write_repo_root_spy,
             ),
@@ -40,6 +43,7 @@ impl TrackedState {
                 write: TrackedStateWrite::create(
                     state.writer(),
                     write_tests_status_tx,
+                    write_check_status_tx,
                     write_coverage_status_tx,
                     write_repo_root_tx,
                 ),
@@ -78,6 +82,10 @@ impl AppStateReader for TrackedStateRead {
         self.read.tests()
     }
 
+    fn check(&self) -> Result<CheckState, StateReaderErr> {
+        self.read.check()
+    }
+
     fn coverage(&self) -> Result<CoverageState, StateReaderErr> {
         self.read.coverage()
     }
@@ -90,6 +98,7 @@ impl AppStateReader for TrackedStateRead {
 pub struct TrackedStateWrite {
     write: StateWriter,
     write_tests_state_tx: Tx<TestsState>,
+    write_check_state_tx: Tx<CheckState>,
     write_coverage_state_tx: Tx<CoverageState>,
     write_repo_root_tx: Tx<RepoRoot>,
 }
@@ -98,12 +107,14 @@ impl TrackedStateWrite {
     fn create(
         write: StateWriter,
         write_tests_state_tx: Tx<TestsState>,
+        write_check_state_tx: Tx<CheckState>,
         write_coverage_state_tx: Tx<CoverageState>,
         write_repo_root_tx: Tx<RepoRoot>,
     ) -> StateWriter {
         Arc::new(Self {
             write,
             write_tests_state_tx,
+            write_check_state_tx,
             write_coverage_state_tx,
             write_repo_root_tx,
         })
@@ -114,6 +125,12 @@ impl AppStateWriter for TrackedStateWrite {
     fn tests(&self, status: TestsState) -> Result<(), StateWriterErr> {
         let res = self.write.tests(status.clone());
         self.write_tests_state_tx.signal(status);
+        res
+    }
+
+    fn check(&self, status: CheckState) -> Result<(), StateWriterErr> {
+        let res = self.write.check(status.clone());
+        self.write_check_state_tx.signal(status);
         res
     }
 
@@ -134,6 +151,8 @@ pub struct StateSpies {
     #[allow(unused)]
     read_status_spy: Spy,
     write_tests_status_spy: Spy<TestsState>,
+    #[allow(unused)]
+    write_check_status_spy: Spy<CheckState>,
     write_coverage_status_spy: Spy<CoverageState>,
     write_repo_root_spy: Spy<RepoRoot>,
 }
@@ -142,12 +161,14 @@ impl StateSpies {
     fn new(
         read_status_spy: Spy,
         write_tests_status_spy: Spy<TestsState>,
+        write_check_status_spy: Spy<CheckState>,
         write_coverage_status_spy: Spy<CoverageState>,
         write_repo_root_spy: Spy<RepoRoot>,
     ) -> Self {
         Self {
             read_status_spy,
             write_tests_status_spy,
+            write_check_status_spy,
             write_coverage_status_spy,
             write_repo_root_spy,
         }
@@ -219,6 +240,10 @@ impl AppStateReader for WorkingStateRead {
         Ok(TestsState::Success)
     }
 
+    fn check(&self) -> Result<CheckState, StateReaderErr> {
+        Ok(CheckState::Success)
+    }
+
     fn coverage(&self) -> Result<CoverageState, StateReaderErr> {
         Ok(CoverageState::Success(20.0))
     }
@@ -238,6 +263,10 @@ impl WorkingStateWrite {
 
 impl AppStateWriter for WorkingStateWrite {
     fn tests(&self, _status: TestsState) -> Result<(), StateWriterErr> {
+        Ok(())
+    }
+
+    fn check(&self, _status: CheckState) -> Result<(), StateWriterErr> {
         Ok(())
     }
 

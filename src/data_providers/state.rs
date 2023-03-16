@@ -1,6 +1,7 @@
+use crate::entities::check::CheckState;
 use crate::entities::coverage::CoverageState;
 use crate::entities::repo_root::RepoRoot;
-use crate::entities::status::TestsState;
+use crate::entities::tests::TestsState;
 use crate::result::{StateReaderErr, StateWriterErr};
 use crate::use_cases::bus::{BusEvent, EventPublisher};
 use crate::use_cases::state::{
@@ -11,6 +12,7 @@ use std::sync::{Arc, RwLock};
 use tracing::instrument;
 
 type TestsStatusState = Arc<RwLock<TestsState>>;
+type CheckStatusState = Arc<RwLock<CheckState>>;
 type CoverageStatusState = Arc<RwLock<CoverageState>>;
 type RepoRootState = Arc<RwLock<RepoRoot>>;
 
@@ -22,14 +24,17 @@ pub struct InMemoryState {
 impl InMemoryState {
     pub fn make(publ: EventPublisher) -> State {
         let tests_state = Arc::new(RwLock::new(TestsState::default()));
+        let check_state = Arc::new(RwLock::new(CheckState::default()));
         let coverage_state = Arc::new(RwLock::new(CoverageState::default()));
         let repo_root = Arc::new(RwLock::new(RepoRoot::default()));
         let reader = InMemoryStateRead::make(
             tests_state.clone(),
+            check_state.clone(),
             coverage_state.clone(),
             repo_root.clone(),
         );
-        let writer = InMemoryStateWrite::make(tests_state, coverage_state, repo_root, publ);
+        let writer =
+            InMemoryStateWrite::make(tests_state, check_state, coverage_state, repo_root, publ);
         Arc::new(Self { reader, writer })
     }
 }
@@ -47,6 +52,7 @@ impl AppState for InMemoryState {
 #[derive(Debug)]
 pub struct InMemoryStateRead {
     tests_state: TestsStatusState,
+    check_state: CheckStatusState,
     coverage_state: CoverageStatusState,
     repo_root: RepoRootState,
 }
@@ -54,11 +60,13 @@ pub struct InMemoryStateRead {
 impl InMemoryStateRead {
     fn make(
         tests_state: TestsStatusState,
+        check_state: CheckStatusState,
         coverage_state: CoverageStatusState,
         repo_root: RepoRootState,
     ) -> StateReader {
         Arc::new(Self {
             tests_state,
+            check_state,
             coverage_state,
             repo_root,
         })
@@ -70,6 +78,12 @@ impl AppStateReader for InMemoryStateRead {
     fn tests(&self) -> Result<TestsState, StateReaderErr> {
         let tests_state = self.tests_state.read().expect("poisoned mutex");
         Ok(tests_state.clone())
+    }
+
+    #[instrument(level = "trace")]
+    fn check(&self) -> Result<CheckState, StateReaderErr> {
+        let check_state = self.check_state.read().expect("poisoned mutex");
+        Ok(check_state.clone())
     }
 
     #[instrument(level = "trace")]
@@ -87,6 +101,7 @@ impl AppStateReader for InMemoryStateRead {
 
 pub struct InMemoryStateWrite {
     tests_state: TestsStatusState,
+    check_state: CheckStatusState,
     coverage_state: CoverageStatusState,
     repo_root: RepoRootState,
     publ: EventPublisher,
@@ -95,12 +110,14 @@ pub struct InMemoryStateWrite {
 impl InMemoryStateWrite {
     fn make(
         tests_state: TestsStatusState,
+        check_state: CheckStatusState,
         coverage_state: CoverageStatusState,
         repo_root: RepoRootState,
         publ: EventPublisher,
     ) -> StateWriter {
         Arc::new(Self {
             tests_state,
+            check_state,
             coverage_state,
             repo_root,
             publ,
@@ -113,6 +130,13 @@ impl AppStateWriter for InMemoryStateWrite {
     fn tests(&self, new_tests_state: TestsState) -> Result<(), StateWriterErr> {
         let mut tests_state = self.tests_state.write().expect("poisoned mutex");
         *tests_state = new_tests_state;
+        Ok(())
+    }
+
+    #[instrument(level = "trace", skip(self))]
+    fn check(&self, new_check_state: CheckState) -> Result<(), StateWriterErr> {
+        let mut check_state = self.check_state.write().expect("poisoned mutex");
+        *check_state = new_check_state;
         Ok(())
     }
 
@@ -232,4 +256,6 @@ mod test {
 
         Ok(())
     }
+
+    // TODO: Add tests for check status change
 }

@@ -23,7 +23,7 @@ impl TestsShell {
         let publ = self.bus.publisher();
         thread::spawn(move || -> Result<()> {
             loop {
-                if let Ok(BusEvent::ChangeDetected) = sub.recv() {
+                if let Ok(BusEvent::CheckPassed) = sub.recv() {
                     debug!("running tests");
                     if let Ok(TestsRunStatus::Success) = test_runner.run_all(state.repo_root()?) {
                         debug!("tests passed");
@@ -52,7 +52,7 @@ mod test {
     use anyhow::Result;
 
     #[test]
-    fn tests_are_run_when_any_change_is_detected() -> Result<()> {
+    fn tests_are_not_started_when_any_change_is_detected() -> Result<()> {
         // given
         init_tracing();
         let (test_runner_spy, test_runner) = tracked(working(TestsRunStatus::Success));
@@ -62,6 +62,24 @@ mod test {
 
         // when
         shim.simulate_change()?;
+
+        // then
+        assert!(!test_runner_spy.run_called());
+
+        Ok(())
+    }
+
+    #[test]
+    fn tests_are_started_when_check_passed() -> Result<()> {
+        // given
+        init_tracing();
+        let (test_runner_spy, test_runner) = tracked(working(TestsRunStatus::Success));
+        let noop_state = noop();
+        let shim = create_test_shim()?;
+        TestsShell::new(shim.bus()).run(test_runner, noop_state.reader());
+
+        // when
+        shim.simulate_check_passed()?;
 
         // then
         assert!(test_runner_spy.run_called());
@@ -79,7 +97,7 @@ mod test {
         TestsShell::new(shim.bus()).run(test_runner, noop_state.reader());
 
         // when
-        shim.simulate_change()?;
+        shim.simulate_check_passed()?;
         shim.ignore_event()?; // ignore BusEvent::ChangeDetected
 
         // then
@@ -98,7 +116,7 @@ mod test {
         TestsShell::new(shim.bus()).run(test_runner, noop_state.reader());
 
         // when
-        shim.simulate_change()?;
+        shim.simulate_check_passed()?;
         shim.ignore_event()?; // ignore BusEvent::ChangeDetected
 
         // then
@@ -117,7 +135,7 @@ mod test {
         TestsShell::new(shim.bus()).run(test_runner, noop_state.reader());
 
         // when
-        shim.simulate_change()?;
+        shim.simulate_check_passed()?;
         shim.ignore_event()?; // ignore BusEvent::ChangeDetected
 
         // then

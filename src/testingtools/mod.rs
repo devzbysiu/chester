@@ -40,11 +40,11 @@ where
     }
 
     pub fn method_called(&self) -> bool {
-        self.rx.recv_timeout(Duration::from_secs(30)).is_ok()
+        self.rx.recv_timeout(Duration::from_secs(3)).is_ok()
     }
 
     pub fn method_called_with_val(&self, val: &T) -> bool {
-        match self.rx.recv_timeout(Duration::from_secs(30)) {
+        match self.rx.recv_timeout(Duration::from_secs(3)) {
             Ok(res) => res == *val,
             _ => false,
         }

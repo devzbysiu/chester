@@ -1,6 +1,7 @@
+use crate::entities::check::CheckState;
 use crate::entities::coverage::CoverageState;
 use crate::entities::repo_root::RepoRoot;
-use crate::entities::status::TestsState;
+use crate::entities::tests::TestsState;
 use crate::result::ServerErr;
 use crate::use_cases::state::State;
 use crate::use_cases::state::{StateReader, StateWriter};
@@ -30,6 +31,7 @@ pub async fn start_server(state: State) -> std::io::Result<()> {
             .app_data(Data::new(state.reader()))
             .app_data(Data::new(state.writer()))
             .service(tests_status_endpt)
+            .service(check_status_endpt)
             .service(coverage_status_endpt)
             .service(change_root)
     })
@@ -47,6 +49,16 @@ async fn tests_status_endpt(state: StateReaderData) -> Result<Json<TestsStatusRe
         .map_err(|_| server_err("Error while checking tests status."))?;
     trace!("responding with {status}");
     Ok(Json(TestsStatusResp::new(status)))
+}
+
+#[instrument(level = "trace")]
+#[get("/check/status")]
+async fn check_status_endpt(state: StateReaderData) -> Result<Json<CheckStatusResp>> {
+    let status = state
+        .check()
+        .map_err(|_| server_err("Error while checking tests status."))?;
+    trace!("responding with {status}");
+    Ok(Json(CheckStatusResp::new(status)))
 }
 
 #[instrument(level = "trace")]
@@ -74,6 +86,16 @@ impl TestsStatusResp {
     }
 }
 
+#[derive(Debug, Serialize)]
+struct CheckStatusResp {
+    check_status: CheckState,
+}
+
+impl CheckStatusResp {
+    fn new(check_status: CheckState) -> Self {
+        Self { check_status }
+    }
+}
 #[derive(Debug, Serialize)]
 struct CoverageStatusResp {
     coverage_status: CoverageState,

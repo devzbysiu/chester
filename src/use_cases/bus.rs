@@ -26,6 +26,8 @@ pub enum BusEvent {
     ChangeDetected,
     TestsPassed,
     TestsFailed,
+    CheckPassed,
+    CheckFailed,
     GotCoverage(f32),
     CoverageFailed,
 }

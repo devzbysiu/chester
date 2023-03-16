@@ -57,6 +57,11 @@ impl TestShim {
         Ok(())
     }
 
+    pub fn simulate_check_passed(&self) -> Result<()> {
+        self.publ.send(BusEvent::CheckPassed)?;
+        Ok(())
+    }
+
     pub fn simulate_tests_succeeded(&self) -> Result<()> {
         self.publ.send(BusEvent::TestsPassed)?;
         Ok(())

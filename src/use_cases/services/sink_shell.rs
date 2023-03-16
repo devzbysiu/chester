@@ -1,5 +1,6 @@
+use crate::entities::check::CheckState;
 use crate::entities::coverage::CoverageState;
-use crate::entities::status::TestsState;
+use crate::entities::tests::TestsState;
 use crate::result::SinkErr;
 use crate::use_cases::bus::{BusEvent, EventBus};
 use crate::use_cases::state::StateWriter;
@@ -32,6 +33,8 @@ impl ResultsSinkShell {
                     }
                     Ok(BusEvent::TestsPassed) => st.tests(TestsState::Success)?,
                     Ok(BusEvent::TestsFailed) => st.tests(TestsState::Failure)?,
+                    Ok(BusEvent::CheckPassed) => st.check(CheckState::Success)?,
+                    Ok(BusEvent::CheckFailed) => st.check(CheckState::Failure)?,
                     Ok(BusEvent::GotCoverage(val)) => st.coverage(CoverageState::Success(val))?,
                     Ok(BusEvent::CoverageFailed) => st.coverage(CoverageState::Failure)?,
                     Err(_) => error!("failed to recv bus event"),

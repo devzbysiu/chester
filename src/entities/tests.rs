@@ -1,6 +1,5 @@
-use std::fmt::Display;
-
 use serde::Serialize;
+use std::fmt::Display;
 
 #[derive(Serialize, Debug, Eq, PartialEq, Clone)]
 #[serde(rename_all = "lowercase")]
