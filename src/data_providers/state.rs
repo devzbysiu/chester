@@ -11,9 +11,9 @@ use crate::use_cases::state::{
 use std::sync::{Arc, RwLock};
 use tracing::instrument;
 
-type TestsStatusState = Arc<RwLock<TestsState>>;
-type CheckStatusState = Arc<RwLock<CheckState>>;
-type CoverageStatusState = Arc<RwLock<CoverageState>>;
+type TestsStatus = Arc<RwLock<TestsState>>;
+type CheckStatus = Arc<RwLock<CheckState>>;
+type CoverageStatus = Arc<RwLock<CoverageState>>;
 type RepoRootState = Arc<RwLock<RepoRoot>>;
 
 pub struct InMemoryState {
@@ -51,17 +51,17 @@ impl AppState for InMemoryState {
 
 #[derive(Debug)]
 pub struct InMemoryStateRead {
-    tests_state: TestsStatusState,
-    check_state: CheckStatusState,
-    coverage_state: CoverageStatusState,
+    tests_state: TestsStatus,
+    check_state: CheckStatus,
+    coverage_state: CoverageStatus,
     repo_root: RepoRootState,
 }
 
 impl InMemoryStateRead {
     fn make(
-        tests_state: TestsStatusState,
-        check_state: CheckStatusState,
-        coverage_state: CoverageStatusState,
+        tests_state: TestsStatus,
+        check_state: CheckStatus,
+        coverage_state: CoverageStatus,
         repo_root: RepoRootState,
     ) -> StateReader {
         Arc::new(Self {
@@ -100,18 +100,18 @@ impl AppStateReader for InMemoryStateRead {
 }
 
 pub struct InMemoryStateWrite {
-    tests_state: TestsStatusState,
-    check_state: CheckStatusState,
-    coverage_state: CoverageStatusState,
+    tests_state: TestsStatus,
+    check_state: CheckStatus,
+    coverage_state: CoverageStatus,
     repo_root: RepoRootState,
     publ: EventPublisher,
 }
 
 impl InMemoryStateWrite {
     fn make(
-        tests_state: TestsStatusState,
-        check_state: CheckStatusState,
-        coverage_state: CoverageStatusState,
+        tests_state: TestsStatus,
+        check_state: CheckStatus,
+        coverage_state: CoverageStatus,
         repo_root: RepoRootState,
         publ: EventPublisher,
     ) -> StateWriter {
