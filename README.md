@@ -47,6 +47,55 @@ Head over to [AOT](https://github.com/devzbysiu/aot) for details how to install
 the widget and to learn how the status is shown. Chester is designed as an API
 you can build upon.
 
+## State Changes
+
+The next step is not triggered unless the previous one is completed with success.
+
+```
+                                    ┌──────────────────────┐
+                                    │                      │
+                                    │  Watch for changes   │
+                                    │                      │
+                                    └──────────┬───────────┘
+                                               │
+                                               │
+                                               │Change detected
+                                               │
+                                    ┌──────────▼───────────┐
+                                    │                      │
+                                    │       Run Check      │
+                                    │                      │
+                                    └──────────┬───────────┘
+                                               │
+                                               │
+                                               │Check passed
+                                               │
+                                    ┌──────────▼───────────┐
+                                    │                      │
+                                    │      Run Tests       │
+                                    │                      │
+                                    └──────────┬───────────┘
+                                               │
+                                               │
+                                               │Tests passed
+                                               │
+                                    ┌──────────▼───────────┐
+                                    │                      │
+                                    │  Update Tests Index  │
+                                    │                      │
+                                    └──────────┬───────────┘
+                                               │
+                                               │
+                                               │Tests changed
+                                               │
+                                    ┌──────────▼───────────┐
+                                    │                      │
+                                    │  Run Code Coverage   │
+                                    │                      │
+                                    └──────────────────────┘
+                                    
+```
+
 ## Chester API
 
 ### Tests status
