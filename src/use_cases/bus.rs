@@ -24,10 +24,16 @@ pub trait Subscriber: Sync + Send {
 #[derive(Debug, Clone, PartialEq)]
 pub enum BusEvent {
     ChangeDetected,
+
+    TestsChanged,
+    TestsNotChanged,
+
     TestsPassed,
     TestsFailed,
+
     CheckPassed,
     CheckFailed,
+
     GotCoverage(f32),
     CoverageFailed,
 }

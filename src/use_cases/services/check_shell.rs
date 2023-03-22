@@ -1,7 +1,8 @@
+use crate::entities::check::CheckState;
 use crate::result::CheckErr;
 use crate::use_cases::bus::{BusEvent, EventBus};
 use crate::use_cases::check_runner::{CheckRunStatus, CheckRunner};
-use crate::use_cases::state::StateReader;
+use crate::use_cases::state::State;
 
 use std::thread;
 use tracing::{debug, instrument, trace};
@@ -17,19 +18,22 @@ impl CheckShell {
         Self { bus }
     }
 
-    #[instrument(skip(self, check_runner))]
-    pub fn run(self, check_runner: CheckRunner, state: StateReader) {
+    #[instrument(skip(self, cr, st))]
+    pub fn run(self, cr: CheckRunner, st: State) {
         let sub = self.bus.subscriber();
         let publ = self.bus.publisher();
         thread::spawn(move || -> Result<()> {
             loop {
                 if let Ok(BusEvent::ChangeDetected) = sub.recv() {
                     debug!("running check");
-                    if let Ok(CheckRunStatus::Success) = check_runner.run(state.repo_root()?) {
+                    st.writer().check(CheckState::Pending)?;
+                    if let Ok(CheckRunStatus::Success) = cr.run(st.reader().repo_root()?) {
                         debug!("check passed");
+                        st.writer().check(CheckState::Success)?;
                         publ.send(BusEvent::CheckPassed)?;
                     } else {
                         debug!("check failed");
+                        st.writer().check(CheckState::Failure)?;
                         publ.send(BusEvent::CheckFailed)?;
                     }
                 } else {
@@ -46,7 +50,7 @@ mod test {
 
     use crate::configuration::tracing::init_tracing;
     use crate::testingtools::check_runner::{failing, tracked, working};
-    use crate::testingtools::state::noop;
+    use crate::testingtools::state;
     use crate::testingtools::unit::create_test_shim;
 
     use anyhow::Result;
@@ -56,9 +60,9 @@ mod test {
         // given
         init_tracing();
         let (check_runner_spy, check_runner) = tracked(working(CheckRunStatus::Success));
-        let noop_state = noop();
+        let noop_state = state::noop();
         let shim = create_test_shim()?;
-        CheckShell::new(shim.bus()).run(check_runner, noop_state.reader());
+        CheckShell::new(shim.bus()).run(check_runner, noop_state);
 
         // when
         shim.simulate_change()?;
@@ -74,9 +78,9 @@ mod test {
         // given
         init_tracing();
         let check_runner = working(CheckRunStatus::Success);
-        let noop_state = noop();
+        let noop_state = state::noop();
         let shim = create_test_shim()?;
-        CheckShell::new(shim.bus()).run(check_runner, noop_state.reader());
+        CheckShell::new(shim.bus()).run(check_runner, noop_state);
 
         // when
         shim.simulate_change()?;
@@ -89,13 +93,33 @@ mod test {
     }
 
     #[test]
+    fn when_check_succeeds_state_is_set_to_pending_then_success() -> Result<()> {
+        // given
+        init_tracing();
+        let check_runner = working(CheckRunStatus::Success);
+        let (spy, state) = state::tracked(&state::noop());
+        let shim = create_test_shim()?;
+        CheckShell::new(shim.bus()).run(check_runner, state);
+
+        // when
+        shim.simulate_change()?;
+        shim.ignore_event()?; // ignore BusEvent::ChangeDetected
+
+        // then
+        assert!(spy.check_state_called_with_val(&CheckState::Pending));
+        assert!(spy.check_state_called_with_val(&CheckState::Success));
+
+        Ok(())
+    }
+
+    #[test]
     fn when_check_fail_there_is_correct_event_on_the_bus() -> Result<()> {
         // given
         init_tracing();
         let check_runner = working(CheckRunStatus::Failure);
-        let noop_state = noop();
+        let noop_state = state::noop();
         let shim = create_test_shim()?;
-        CheckShell::new(shim.bus()).run(check_runner, noop_state.reader());
+        CheckShell::new(shim.bus()).run(check_runner, noop_state);
 
         // when
         shim.simulate_change()?;
@@ -108,13 +132,33 @@ mod test {
     }
 
     #[test]
+    fn when_check_fail_state_is_set_to_pending_then_failure() -> Result<()> {
+        // given
+        init_tracing();
+        let check_runner = working(CheckRunStatus::Failure);
+        let (spy, state) = state::tracked(&state::noop());
+        let shim = create_test_shim()?;
+        CheckShell::new(shim.bus()).run(check_runner, state);
+
+        // when
+        shim.simulate_change()?;
+        shim.ignore_event()?; // ignore BusEvent::ChangeDetected
+
+        // then
+        assert!(spy.check_state_called_with_val(&CheckState::Pending));
+        assert!(spy.check_state_called_with_val(&CheckState::Failure));
+
+        Ok(())
+    }
+
+    #[test]
     fn when_check_runner_fails_correct_event_is_sent() -> Result<()> {
         // given
         init_tracing();
         let check_runner = failing();
-        let noop_state = noop();
+        let noop_state = state::noop();
         let shim = create_test_shim()?;
-        CheckShell::new(shim.bus()).run(check_runner, noop_state.reader());
+        CheckShell::new(shim.bus()).run(check_runner, noop_state);
 
         // when
         shim.simulate_change()?;
@@ -122,6 +166,26 @@ mod test {
 
         // then
         assert!(shim.event_on_bus(&BusEvent::CheckFailed)?);
+
+        Ok(())
+    }
+
+    #[test]
+    fn when_check_runner_fails_status_is_set_to_pending_then_failure() -> Result<()> {
+        // given
+        init_tracing();
+        let check_runner = failing();
+        let (spy, state) = state::tracked(&state::noop());
+        let shim = create_test_shim()?;
+        CheckShell::new(shim.bus()).run(check_runner, state);
+
+        // when
+        shim.simulate_change()?;
+        shim.ignore_event()?; // ignore BusEvent::ChangeDetected
+
+        // then
+        assert!(spy.check_state_called_with_val(&CheckState::Pending));
+        assert!(spy.check_state_called_with_val(&CheckState::Failure));
 
         Ok(())
     }

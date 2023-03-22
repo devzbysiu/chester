@@ -1,7 +1,5 @@
 use crate::result::WatcherErr;
-use crate::use_cases::bus::BusEvent;
-use crate::use_cases::bus::EventBus;
-use crate::use_cases::bus::EventPublisher;
+use crate::use_cases::bus::{BusEvent, EventBus};
 use crate::use_cases::change_watcher::ChangeWatcher;
 use crate::use_cases::state::StateReader;
 
@@ -21,20 +19,15 @@ impl ChangeWatcherShell {
 
     #[instrument(skip(self, change_watcher))]
     pub fn run(self, change_watcher: ChangeWatcher, state: StateReader) {
+        let publ = self.bus.publisher();
         thread::spawn(move || -> Result<()> {
             loop {
                 change_watcher.wait_for_change(state.repo_root()?)?;
-                debug!("detected change, triggering tests");
-                trigger_tests(&self.bus.publisher())?;
+                debug!("detected change");
+                publ.send(BusEvent::ChangeDetected)?;
             }
         });
     }
-}
-
-#[instrument(skip(publ))]
-pub fn trigger_tests(publ: &EventPublisher) -> Result<()> {
-    publ.send(BusEvent::ChangeDetected)?;
-    Ok(())
 }
 
 #[cfg(test)]

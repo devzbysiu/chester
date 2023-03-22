@@ -1,6 +1,7 @@
+use crate::entities::tests::TestsState;
 use crate::result::RunnerErr;
 use crate::use_cases::bus::{BusEvent, EventBus};
-use crate::use_cases::state::StateReader;
+use crate::use_cases::state::State;
 use crate::use_cases::test_runner::{TestRunner, TestsRunStatus};
 
 use std::thread;
@@ -17,19 +18,22 @@ impl TestsShell {
         Self { bus }
     }
 
-    #[instrument(skip(self, test_runner))]
-    pub fn run(self, test_runner: TestRunner, state: StateReader) {
+    #[instrument(skip(self, tr, st))]
+    pub fn run(self, tr: TestRunner, st: State) {
         let sub = self.bus.subscriber();
         let publ = self.bus.publisher();
         thread::spawn(move || -> Result<()> {
             loop {
                 if let Ok(BusEvent::CheckPassed) = sub.recv() {
                     debug!("running tests");
-                    if let Ok(TestsRunStatus::Success) = test_runner.run(state.repo_root()?) {
+                    st.writer().tests(TestsState::Pending)?;
+                    if let Ok(TestsRunStatus::Success) = tr.run(st.reader().repo_root()?) {
                         debug!("tests passed");
+                        st.writer().tests(TestsState::Success)?;
                         publ.send(BusEvent::TestsPassed)?;
                     } else {
                         debug!("tests failed");
+                        st.writer().tests(TestsState::Failure)?;
                         publ.send(BusEvent::TestsFailed)?;
                     }
                 } else {
@@ -45,38 +49,20 @@ mod test {
     use super::*;
 
     use crate::configuration::tracing::init_tracing;
-    use crate::testingtools::state::noop;
+    use crate::testingtools::state;
     use crate::testingtools::test_runner::{failing, tracked, working};
     use crate::testingtools::unit::create_test_shim;
 
     use anyhow::Result;
 
     #[test]
-    fn tests_are_not_started_when_any_change_is_detected() -> Result<()> {
-        // given
-        init_tracing();
-        let (test_runner_spy, test_runner) = tracked(working(TestsRunStatus::Success));
-        let noop_state = noop();
-        let shim = create_test_shim()?;
-        TestsShell::new(shim.bus()).run(test_runner, noop_state.reader());
-
-        // when
-        shim.simulate_change()?;
-
-        // then
-        assert!(!test_runner_spy.run_called());
-
-        Ok(())
-    }
-
-    #[test]
     fn tests_are_started_when_check_passed() -> Result<()> {
         // given
         init_tracing();
         let (test_runner_spy, test_runner) = tracked(working(TestsRunStatus::Success));
-        let noop_state = noop();
+        let noop_state = state::noop();
         let shim = create_test_shim()?;
-        TestsShell::new(shim.bus()).run(test_runner, noop_state.reader());
+        TestsShell::new(shim.bus()).run(test_runner, noop_state);
 
         // when
         shim.simulate_check_passed()?;
@@ -92,9 +78,9 @@ mod test {
         // given
         init_tracing();
         let test_runner = working(TestsRunStatus::Success);
-        let noop_state = noop();
+        let noop_state = state::noop();
         let shim = create_test_shim()?;
-        TestsShell::new(shim.bus()).run(test_runner, noop_state.reader());
+        TestsShell::new(shim.bus()).run(test_runner, noop_state);
 
         // when
         shim.simulate_check_passed()?;
@@ -107,13 +93,33 @@ mod test {
     }
 
     #[test]
+    fn when_tests_pass_state_is_set_to_pending_then_success() -> Result<()> {
+        // given
+        init_tracing();
+        let test_runner = working(TestsRunStatus::Success);
+        let (spy, state) = state::tracked(&state::noop());
+        let shim = create_test_shim()?;
+        TestsShell::new(shim.bus()).run(test_runner, state);
+
+        // when
+        shim.simulate_check_passed()?;
+        shim.ignore_event()?; // ignore BusEvent::ChangeDetected
+
+        // then
+        assert!(spy.tests_state_called_with_val(&TestsState::Pending));
+        assert!(spy.tests_state_called_with_val(&TestsState::Success));
+
+        Ok(())
+    }
+
+    #[test]
     fn when_tests_fail_there_is_correct_event_on_the_bus() -> Result<()> {
         // given
         init_tracing();
         let test_runner = working(TestsRunStatus::Failure);
-        let noop_state = noop();
+        let noop_state = state::noop();
         let shim = create_test_shim()?;
-        TestsShell::new(shim.bus()).run(test_runner, noop_state.reader());
+        TestsShell::new(shim.bus()).run(test_runner, noop_state);
 
         // when
         shim.simulate_check_passed()?;
@@ -126,13 +132,33 @@ mod test {
     }
 
     #[test]
+    fn when_tests_fail_state_is_set_to_pending_then_failure() -> Result<()> {
+        // given
+        init_tracing();
+        let test_runner = working(TestsRunStatus::Failure);
+        let (spy, state) = state::tracked(&state::noop());
+        let shim = create_test_shim()?;
+        TestsShell::new(shim.bus()).run(test_runner, state);
+
+        // when
+        shim.simulate_check_passed()?;
+        shim.ignore_event()?; // ignore BusEvent::ChangeDetected
+
+        // then
+        assert!(spy.tests_state_called_with_val(&TestsState::Pending));
+        assert!(spy.tests_state_called_with_val(&TestsState::Failure));
+
+        Ok(())
+    }
+
+    #[test]
     fn when_test_runner_fails_correct_event_is_sent() -> Result<()> {
         // given
         init_tracing();
         let test_runner = failing();
-        let noop_state = noop();
+        let noop_state = state::noop();
         let shim = create_test_shim()?;
-        TestsShell::new(shim.bus()).run(test_runner, noop_state.reader());
+        TestsShell::new(shim.bus()).run(test_runner, noop_state);
 
         // when
         shim.simulate_check_passed()?;
@@ -140,6 +166,26 @@ mod test {
 
         // then
         assert!(shim.event_on_bus(&BusEvent::TestsFailed)?);
+
+        Ok(())
+    }
+
+    #[test]
+    fn when_test_runner_fails_state_is_set_to_pending_then_failure() -> Result<()> {
+        // given
+        init_tracing();
+        let test_runner = failing();
+        let (spy, state) = state::tracked(&state::noop());
+        let shim = create_test_shim()?;
+        TestsShell::new(shim.bus()).run(test_runner, state);
+
+        // when
+        shim.simulate_check_passed()?;
+        shim.ignore_event()?; // ignore BusEvent::ChangeDetected
+
+        // then
+        assert!(spy.tests_state_called_with_val(&TestsState::Pending));
+        assert!(spy.tests_state_called_with_val(&TestsState::Failure));
 
         Ok(())
     }

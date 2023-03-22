@@ -28,6 +28,9 @@ pub enum RunnerErr {
 
     #[error("Error when reading state.")]
     Read(#[from] StateReaderErr),
+
+    #[error("Error when writing to state.")]
+    Write(#[from] StateWriterErr),
 }
 
 #[derive(Debug, Error)]
@@ -37,6 +40,21 @@ pub enum CheckErr {
 
     #[error("Error when reading state.")]
     Read(#[from] StateReaderErr),
+
+    #[error("Error when writing to state.")]
+    Write(#[from] StateWriterErr),
+}
+
+#[derive(Debug, Error)]
+pub enum IndexErr {
+    #[error("Error when using bus.")]
+    Bus(#[from] BusErr),
+
+    #[error("Error when reading state.")]
+    Read(#[from] StateReaderErr),
+
+    #[error("Error while executing command.")]
+    Cmd(#[from] CmdErr),
 }
 
 #[derive(Debug, Error)]
@@ -49,6 +67,9 @@ pub enum CoverageErr {
 
     #[error("Error when reading state.")]
     Read(#[from] StateReaderErr),
+
+    #[error("Error when writing to state.")]
+    Write(#[from] StateWriterErr),
 
     #[error("Invalid coverage value.")]
     InvalidValue(String),

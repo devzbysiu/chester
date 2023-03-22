@@ -8,6 +8,10 @@ use std::process::{Command, ExitStatus, Stdio};
 pub fn cfg() -> Result<Config, CfgErr> {
     Ok(ConfigBuilder::default()
         .tests_cmd(Cmd::new("cargo", &["test"]))
+        .list_tests_cmd(Cmd::new(
+            "cargo",
+            &["-q", "test", "--", "--list", "--format=terse"],
+        ))
         .check_cmd(Cmd::new("cargo", &["check"]))
         .coverage_cmd(Cmd::new(
             "cargo",
@@ -27,6 +31,7 @@ pub fn cfg() -> Result<Config, CfgErr> {
 pub struct Config {
     pub ignored_paths: Vec<IgnoredPath>,
     pub tests_cmd: Cmd,
+    pub list_tests_cmd: Cmd,
     pub check_cmd: Cmd,
     pub coverage_cmd: Cmd,
 }

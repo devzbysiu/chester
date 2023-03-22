@@ -5,3 +5,4 @@ pub mod coverage_runner;
 pub mod server;
 pub mod state;
 pub mod test_runner;
+pub mod tests_index;

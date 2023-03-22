@@ -62,28 +62,8 @@ impl TestShim {
         Ok(())
     }
 
-    pub fn simulate_check_failed(&self) -> Result<()> {
-        self.publ.send(BusEvent::CheckFailed)?;
-        Ok(())
-    }
-
-    pub fn simulate_tests_passed(&self) -> Result<()> {
-        self.publ.send(BusEvent::TestsPassed)?;
-        Ok(())
-    }
-
-    pub fn simulate_tests_failed(&self) -> Result<()> {
-        self.publ.send(BusEvent::TestsFailed)?;
-        Ok(())
-    }
-
-    pub fn simulate_coverage_passed(&self) -> Result<()> {
-        self.publ.send(BusEvent::GotCoverage(90.0))?;
-        Ok(())
-    }
-
-    pub fn simulate_coverage_failed(&self) -> Result<()> {
-        self.publ.send(BusEvent::CoverageFailed)?;
+    pub fn simulate_tests_changed(&self) -> Result<()> {
+        self.publ.send(BusEvent::TestsChanged)?;
         Ok(())
     }
 

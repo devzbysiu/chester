@@ -33,16 +33,16 @@ impl FsChangeWatcher {
     }
 
     #[instrument(skip(self))]
-    fn reattach_watcher(&self, current_root: RepoRoot) -> Result<(), WatcherErr> {
-        debug!("repo root changed, recreating watcher");
-        let (new_rx, new_watcher) = setup_watcher(&current_root)?;
+    fn reattach_watcher(&self, passed_root: RepoRoot) -> Result<(), WatcherErr> {
+        debug!("repo root changed to '{passed_root:?}', recreating watcher");
+        let (new_rx, new_watcher) = setup_watcher(&passed_root)?;
         let mut rx = self.rx.borrow_mut();
         let mut watcher = self.watcher.borrow_mut();
         let mut repo_root = self.repo_root.borrow_mut();
 
         *rx = new_rx;
         *watcher = new_watcher;
-        *repo_root = current_root;
+        *repo_root = passed_root;
 
         Ok(())
     }
@@ -77,9 +77,9 @@ fn setup_watcher<P: AsRef<Path>>(path: P) -> Result<(Rx, Dbcr), WatcherErr> {
 
 impl Watcher for FsChangeWatcher {
     #[instrument(level = "trace", skip(self))]
-    fn wait_for_change(&self, current_root: RepoRoot) -> Result<(), WatcherErr> {
-        if *self.repo_root.borrow() != current_root {
-            self.reattach_watcher(current_root)?;
+    fn wait_for_change(&self, passed_root: RepoRoot) -> Result<(), WatcherErr> {
+        if *self.repo_root.borrow() != passed_root {
+            self.reattach_watcher(passed_root)?;
         }
         let rx = self.rx.borrow();
         loop {
