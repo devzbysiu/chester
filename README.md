@@ -42,15 +42,10 @@ display code statistics using small desktop widget.
 
 ![AOT](res/aos.gif)
 
-The test is changed to make tests fail. After save, in the top right corner you
-can see the widget starts blinking which means that tests started. After the
-tests finish, the widget changes to red which means, that tests failed. Next,
-the test is fixed and changes are saved. The widget is blinking and then changes
-to green which means the tests passed.
-
 **Note:** Keep in mind the GIF above is a separate project which uses chester.
 Head over to [AOT](https://github.com/devzbysiu/aot) for details how to install
-the widget. Chester is designed as an API you can build upon.
+the widget and to learn how the status is shown. Chester is designed as an API
+you can build upon.
 
 ## Chester API
 
