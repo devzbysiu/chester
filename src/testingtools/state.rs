@@ -202,8 +202,30 @@ pub fn noop() -> State {
     working()
 }
 
+pub fn working_with(values: StateValues) -> State {
+    WorkingState::make(values)
+}
+
 pub fn working() -> State {
-    WorkingState::make()
+    WorkingState::make(StateValues::default())
+}
+
+pub struct StateValues {
+    pub check_state: CheckState,
+    pub tests_state: TestsState,
+    pub cov_state: CoverageState,
+    pub repo_root: RepoRoot,
+}
+
+impl Default for StateValues {
+    fn default() -> Self {
+        Self {
+            check_state: CheckState::Success,
+            tests_state: TestsState::Success,
+            cov_state: CoverageState::Success(20.0),
+            repo_root: RepoRoot::default(),
+        }
+    }
 }
 
 struct WorkingState {
@@ -212,9 +234,9 @@ struct WorkingState {
 }
 
 impl WorkingState {
-    fn make() -> State {
+    fn make(values: StateValues) -> State {
         Arc::new(Self {
-            read: WorkingStateRead::new(),
+            read: WorkingStateRead::new(values),
             write: WorkingStateWrite::new(),
         })
     }
@@ -230,29 +252,31 @@ impl AppState for WorkingState {
     }
 }
 
-struct WorkingStateRead;
+struct WorkingStateRead {
+    values: StateValues,
+}
 
 impl WorkingStateRead {
-    fn new() -> Arc<Self> {
-        Arc::new(Self)
+    fn new(values: StateValues) -> Arc<Self> {
+        Arc::new(Self { values })
     }
 }
 
 impl AppStateReader for WorkingStateRead {
-    fn tests(&self) -> Result<TestsState, StateReaderErr> {
-        Ok(TestsState::Success)
+    fn check(&self) -> Result<CheckState, StateReaderErr> {
+        Ok(self.values.check_state.clone())
     }
 
-    fn check(&self) -> Result<CheckState, StateReaderErr> {
-        Ok(CheckState::Success)
+    fn tests(&self) -> Result<TestsState, StateReaderErr> {
+        Ok(self.values.tests_state.clone())
     }
 
     fn coverage(&self) -> Result<CoverageState, StateReaderErr> {
-        Ok(CoverageState::Success(20.0))
+        Ok(self.values.cov_state.clone())
     }
 
     fn repo_root(&self) -> Result<RepoRoot, StateReaderErr> {
-        Ok(RepoRoot::default())
+        Ok(self.values.repo_root.clone())
     }
 }
 
