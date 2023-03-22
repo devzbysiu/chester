@@ -35,3 +35,18 @@ pub fn setup_shells(rt: Runtime) -> State {
 
     state
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    use crate::configuration::config::Config;
+
+    use anyhow::Result;
+
+    #[test]
+    fn setup_shells_works() -> Result<()> {
+        setup_shells(Runtime::new(Config::default())?);
+        Ok(())
+    }
+}

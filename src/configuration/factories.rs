@@ -73,3 +73,13 @@ fn coverage_runner(cfg: Config) -> CoverageRunner {
 pub fn state(publ: EventPublisher) -> State {
     InMemoryState::make(publ)
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn creating_runtime_works() {
+        assert!(Runtime::new(Config::default()).is_ok());
+    }
+}

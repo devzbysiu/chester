@@ -65,3 +65,13 @@ impl Cmd {
             .status()?)
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn cfg_works() {
+        assert!(cfg().is_ok());
+    }
+}
