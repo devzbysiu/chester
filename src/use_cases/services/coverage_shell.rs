@@ -28,7 +28,7 @@ impl CoverageShell {
                     debug!("running coverage");
                     st.writer().coverage(CoverageState::Pending)?;
                     if let Ok(CoverageRunStatus::Success(val)) = cr.run(st.reader().repo_root()?) {
-                        debug!("coverage calculated");
+                        debug!("coverage calculated: {val}");
                         st.writer().coverage(CoverageState::Success(val))?;
                         publ.send(BusEvent::GotCoverage(val))?;
                     } else {
