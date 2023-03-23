@@ -28,18 +28,20 @@ impl CheckShell {
                 let Ok(BusEvent::ChangeDetected) = sub.recv() else {
                     trace!("no change detected");
                     continue;
-                    };
+                };
+
                 debug!("running check");
                 sw.check(CheckState::Pending)?;
-                if let Ok(CheckRunStatus::Success) = cr.run(st.reader().repo_root()?) {
-                    debug!("check passed");
-                    sw.check(CheckState::Success)?;
-                    publ.send(BusEvent::CheckPassed)?;
-                } else {
+                let Ok(CheckRunStatus::Success) = cr.run(st.reader().repo_root()?) else {
                     debug!("check failed");
                     sw.check(CheckState::Failure)?;
                     publ.send(BusEvent::CheckFailed)?;
-                }
+                    continue;
+                };
+
+                debug!("check passed");
+                sw.check(CheckState::Success)?;
+                publ.send(BusEvent::CheckPassed)?;
             }
         });
     }

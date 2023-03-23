@@ -27,6 +27,7 @@ impl TestsIndexShell {
                     trace!("no change detected");
                     continue;
                 };
+
                 debug!("checking if tests changed");
                 match index.refresh(st.reader().repo_root()?) {
                     Ok(IndexStatus::TestsChanged) => {

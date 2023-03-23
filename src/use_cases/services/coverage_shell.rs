@@ -28,18 +28,20 @@ impl CoverageShell {
                 let Ok(BusEvent::TestsChanged) = sub.recv() else {
                     trace!("no change detected");
                     continue;
-                    };
+                };
+
                 debug!("running coverage");
                 sw.coverage(CoverageState::Pending)?;
-                if let Ok(CoverageRunStatus::Success(val)) = cr.run(st.reader().repo_root()?) {
-                    debug!("coverage calculated: {val}");
-                    sw.coverage(CoverageState::Success(val))?;
-                    publ.send(BusEvent::GotCoverage(val))?;
-                } else {
+                let Ok(CoverageRunStatus::Success(val)) = cr.run(st.reader().repo_root()?) else {
                     debug!("coverage failed");
                     sw.coverage(CoverageState::Failure)?;
                     publ.send(BusEvent::CoverageFailed)?;
-                }
+                    continue;
+                };
+
+                debug!("coverage calculated: {val}");
+                sw.coverage(CoverageState::Success(val))?;
+                publ.send(BusEvent::GotCoverage(val))?;
             }
         });
     }

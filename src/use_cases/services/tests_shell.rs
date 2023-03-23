@@ -29,17 +29,19 @@ impl TestsShell {
                     trace!("no change detected");
                     continue;
                 };
+
                 debug!("running tests");
                 sw.tests(TestsState::Pending)?;
-                if let Ok(TestsRunStatus::Success) = tr.run(st.reader().repo_root()?) {
-                    debug!("tests passed");
-                    sw.tests(TestsState::Success)?;
-                    publ.send(BusEvent::TestsPassed)?;
-                } else {
+                let Ok(TestsRunStatus::Success) = tr.run(st.reader().repo_root()?) else {
                     debug!("tests failed");
                     sw.tests(TestsState::Failure)?;
                     publ.send(BusEvent::TestsFailed)?;
-                }
+                    continue;
+                };
+
+                debug!("tests passed");
+                sw.tests(TestsState::Success)?;
+                publ.send(BusEvent::TestsPassed)?;
             }
         });
     }
