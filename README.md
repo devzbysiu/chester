@@ -40,10 +40,10 @@ top of that.
 Example use of chester: [Always On Stats](https://github.com/devzbysiu/aos) -
 display code statistics using small desktop widget.
 
-![AOT](res/aos.gif)
+![AOS](res/aos.gif)
 
 **Note:** Keep in mind the GIF above is a separate project which uses chester.
-Head over to [AOT](https://github.com/devzbysiu/aot) for details how to install
+Head over to [AOS](https://github.com/devzbysiu/aos) for details how to install
 the widget and to learn how the status is shown. Chester is designed as an API
 you can build upon.
 
