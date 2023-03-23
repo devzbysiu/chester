@@ -56,8 +56,6 @@ impl TIndex for DefaultTestsIndex {
     }
 }
 
-// TODO: Add tests
-
 #[cfg(test)]
 mod test {
     use super::*;
