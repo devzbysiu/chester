@@ -23,22 +23,22 @@ impl TestsIndexShell {
         let publ = self.bus.publisher();
         thread::spawn(move || -> Result<()> {
             loop {
-                if let Ok(BusEvent::TestsPassed) = sub.recv() {
-                    debug!("checking if tests changed");
-                    match index.refresh(st.reader().repo_root()?) {
-                        Ok(IndexStatus::TestsChanged) => {
-                            debug!("tests change detected");
-                            publ.send(BusEvent::TestsChanged)?;
-                        }
-                        Ok(IndexStatus::TestsNotChanged) => {
-                            debug!("tests not changed");
-                            publ.send(BusEvent::TestsNotChanged)?;
-                        }
-                        Ok(IndexStatus::Failure) => error!("index refresh failed"),
-                        Err(e) => error!("error while running index refresh: {e:?}"),
-                    }
-                } else {
+                let Ok(BusEvent::TestsPassed) = sub.recv() else {
                     trace!("no change detected");
+                    continue;
+                };
+                debug!("checking if tests changed");
+                match index.refresh(st.reader().repo_root()?) {
+                    Ok(IndexStatus::TestsChanged) => {
+                        debug!("tests change detected");
+                        publ.send(BusEvent::TestsChanged)?;
+                    }
+                    Ok(IndexStatus::TestsNotChanged) => {
+                        debug!("tests not changed");
+                        publ.send(BusEvent::TestsNotChanged)?;
+                    }
+                    Ok(IndexStatus::Failure) => error!("index refresh failed"),
+                    Err(e) => error!("error while running index refresh: {e:?}"),
                 }
             }
         });

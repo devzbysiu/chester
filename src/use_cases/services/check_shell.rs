@@ -25,20 +25,20 @@ impl CheckShell {
         thread::spawn(move || -> Result<()> {
             let sw = st.writer();
             loop {
-                if let Ok(BusEvent::ChangeDetected) = sub.recv() {
-                    debug!("running check");
-                    sw.check(CheckState::Pending)?;
-                    if let Ok(CheckRunStatus::Success) = cr.run(st.reader().repo_root()?) {
-                        debug!("check passed");
-                        sw.check(CheckState::Success)?;
-                        publ.send(BusEvent::CheckPassed)?;
-                    } else {
-                        debug!("check failed");
-                        sw.check(CheckState::Failure)?;
-                        publ.send(BusEvent::CheckFailed)?;
-                    }
-                } else {
+                let Ok(BusEvent::ChangeDetected) = sub.recv() else {
                     trace!("no change detected");
+                    continue;
+                    };
+                debug!("running check");
+                sw.check(CheckState::Pending)?;
+                if let Ok(CheckRunStatus::Success) = cr.run(st.reader().repo_root()?) {
+                    debug!("check passed");
+                    sw.check(CheckState::Success)?;
+                    publ.send(BusEvent::CheckPassed)?;
+                } else {
+                    debug!("check failed");
+                    sw.check(CheckState::Failure)?;
+                    publ.send(BusEvent::CheckFailed)?;
                 }
             }
         });

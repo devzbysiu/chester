@@ -25,20 +25,20 @@ impl TestsShell {
         thread::spawn(move || -> Result<()> {
             let sw = st.writer();
             loop {
-                if let Ok(BusEvent::CheckPassed) = sub.recv() {
-                    debug!("running tests");
-                    sw.tests(TestsState::Pending)?;
-                    if let Ok(TestsRunStatus::Success) = tr.run(st.reader().repo_root()?) {
-                        debug!("tests passed");
-                        sw.tests(TestsState::Success)?;
-                        publ.send(BusEvent::TestsPassed)?;
-                    } else {
-                        debug!("tests failed");
-                        sw.tests(TestsState::Failure)?;
-                        publ.send(BusEvent::TestsFailed)?;
-                    }
-                } else {
+                let Ok(BusEvent::CheckPassed) = sub.recv() else {
                     trace!("no change detected");
+                    continue;
+                };
+                debug!("running tests");
+                sw.tests(TestsState::Pending)?;
+                if let Ok(TestsRunStatus::Success) = tr.run(st.reader().repo_root()?) {
+                    debug!("tests passed");
+                    sw.tests(TestsState::Success)?;
+                    publ.send(BusEvent::TestsPassed)?;
+                } else {
+                    debug!("tests failed");
+                    sw.tests(TestsState::Failure)?;
+                    publ.send(BusEvent::TestsFailed)?;
                 }
             }
         });
