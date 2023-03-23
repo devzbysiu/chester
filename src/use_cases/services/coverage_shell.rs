@@ -92,7 +92,7 @@ mod test {
     }
 
     #[test]
-    fn when_coverage_pass_there_is_corrent_event_on_the_bus() -> Result<()> {
+    fn when_coverage_pass_there_is_correct_event_on_the_bus() -> Result<()> {
         // given
         init_tracing();
         let cov_runner = working(CoverageRunStatus::Success(20.0));

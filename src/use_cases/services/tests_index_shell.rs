@@ -25,16 +25,17 @@ impl TestsIndexShell {
             loop {
                 if let Ok(BusEvent::TestsPassed) = sub.recv() {
                     debug!("checking if tests changed");
-                    match index.refresh(st.reader().repo_root()?)? {
-                        IndexStatus::TestsChanged => {
+                    match index.refresh(st.reader().repo_root()?) {
+                        Ok(IndexStatus::TestsChanged) => {
                             debug!("tests change detected");
                             publ.send(BusEvent::TestsChanged)?;
                         }
-                        IndexStatus::TestsNotChanged => {
+                        Ok(IndexStatus::TestsNotChanged) => {
                             debug!("tests not changed");
                             publ.send(BusEvent::TestsNotChanged)?;
                         }
-                        IndexStatus::Failure => error!("index refresh failed"),
+                        Ok(IndexStatus::Failure) => error!("index refresh failed"),
+                        Err(e) => error!("error while running index refresh: {e:?}"),
                     }
                 } else {
                     trace!("no change detected");
@@ -44,108 +45,108 @@ impl TestsIndexShell {
     }
 }
 
-// TODO: Add Tests
+#[cfg(test)]
+mod test {
+    use super::*;
 
-// #[cfg(test)]
-// mod test {
-//     use super::*;
+    use crate::configuration::tracing::init_tracing;
+    use crate::testingtools::state;
+    use crate::testingtools::tests_index::{failing, tracked, working};
+    use crate::testingtools::unit::create_test_shim;
 
-//     use crate::configuration::tracing::init_tracing;
-//     use crate::testingtools::coverage_runner::{failing, tracked, working};
-//     use crate::testingtools::state::noop;
-//     use crate::testingtools::unit::create_test_shim;
+    use anyhow::Result;
 
-//     use anyhow::Result;
+    #[test]
+    fn index_is_started_when_tests_passed() -> Result<()> {
+        // given
+        init_tracing();
+        let (spy, index) = tracked(working(IndexStatus::TestsChanged));
+        let state = state::noop();
+        let shim = create_test_shim()?;
+        TestsIndexShell::new(shim.bus()).run(index, state);
 
-//     #[test]
-//     fn coverage_is_not_started_when_change_is_detected() -> Result<()> {
-//         // given
-//         init_tracing();
-//         let (cov_runner_spy, cov_runner) = tracked(working(CoverageRunStatus::Success(20.0)));
-//         let noop_state = noop();
-//         let shim = create_test_shim()?;
-//         CoverageShell::new(shim.bus()).run(cov_runner, noop_state.reader());
+        // when
+        shim.simulate_tests_passed()?;
 
-//         // when
-//         shim.simulate_change()?;
+        // then
+        assert!(spy.refresh_called());
 
-//         // then
-//         assert!(!cov_runner_spy.run_called());
+        Ok(())
+    }
 
-//         Ok(())
-//     }
+    #[test]
+    fn when_tests_changed_there_is_correct_event_on_the_bus() -> Result<()> {
+        // given
+        init_tracing();
+        let index = working(IndexStatus::TestsChanged);
+        let state = state::noop();
+        let shim = create_test_shim()?;
+        TestsIndexShell::new(shim.bus()).run(index, state);
 
-//     #[test]
-//     fn coverage_is_started_when_tests_passed() -> Result<()> {
-//         // given
-//         init_tracing();
-//         let (cov_runner_spy, cov_runner) = tracked(working(CoverageRunStatus::Success(20.0)));
-//         let noop_state = noop();
-//         let shim = create_test_shim()?;
-//         CoverageShell::new(shim.bus()).run(cov_runner, noop_state.reader());
+        // when
+        shim.simulate_tests_passed()?;
+        shim.ignore_event()?;
 
-//         // when
-//         shim.simulate_tests_passed()?;
+        // then
+        assert!(shim.event_on_bus(&BusEvent::TestsChanged)?);
 
-//         // then
-//         assert!(cov_runner_spy.run_called());
+        Ok(())
+    }
 
-//         Ok(())
-//     }
-//     #[test]
-//     fn when_coverage_pass_there_is_corrent_event_on_the_bus() -> Result<()> {
-//         // given
-//         init_tracing();
-//         let cov_runner = working(CoverageRunStatus::Success(20.0));
-//         let noop_state = noop();
-//         let shim = create_test_shim()?;
-//         CoverageShell::new(shim.bus()).run(cov_runner, noop_state.reader());
+    #[test]
+    fn when_tests_did_not_change_there_is_correct_event_on_the_bus() -> Result<()> {
+        // given
+        init_tracing();
+        let index = working(IndexStatus::TestsNotChanged);
+        let state = state::noop();
+        let shim = create_test_shim()?;
+        TestsIndexShell::new(shim.bus()).run(index, state);
 
-//         // when
-//         shim.simulate_tests_passed()?;
-//         shim.ignore_event()?; // ignore BusEvent::ChangeDetected
+        // when
+        shim.simulate_tests_passed()?;
+        shim.ignore_event()?;
 
-//         // then
-//         assert!(shim.event_on_bus(&BusEvent::GotCoverage(20.0))?);
+        // then
+        assert!(shim.event_on_bus(&BusEvent::TestsNotChanged)?);
 
-//         Ok(())
-//     }
+        Ok(())
+    }
 
-//     #[test]
-//     fn when_coverage_fail_there_is_correct_event_on_the_bus() -> Result<()> {
-//         // given
-//         init_tracing();
-//         let coverage_runner = working(CoverageRunStatus::Failure);
-//         let noop_state = noop();
-//         let shim = create_test_shim()?;
-//         CoverageShell::new(shim.bus()).run(coverage_runner, noop_state.reader());
+    #[test]
+    fn when_index_fails_to_refresh_nothing_is_on_the_bus() -> Result<()> {
+        // given
+        init_tracing();
+        let index = working(IndexStatus::Failure);
+        let state = state::noop();
+        let shim = create_test_shim()?;
+        TestsIndexShell::new(shim.bus()).run(index, state);
 
-//         // when
-//         shim.simulate_tests_passed()?;
-//         shim.ignore_event()?; // ignore BusEvent::ChangeDetected
+        // when
+        shim.simulate_tests_passed()?;
+        shim.ignore_event()?;
 
-//         // then
-//         assert!(shim.event_on_bus(&BusEvent::CoverageFailed)?);
+        // then
+        assert!(shim.no_event_on_bus()?);
 
-//         Ok(())
-//     }
+        Ok(())
+    }
 
-//     #[test]
-//     fn when_coverage_runner_fail_there_is_correct_event_on_the_bus() -> Result<()> {
-//         // given
-//         init_tracing();
-//         let coverage_runner = failing();
-//         let noop_state = noop();
-//         let shim = create_test_shim()?;
-//         CoverageShell::new(shim.bus()).run(coverage_runner, noop_state.reader());
+    #[test]
+    fn when_indexing_command_fails_there_is_no_event_on_the_bus() -> Result<()> {
+        // given
+        init_tracing();
+        let index = failing();
+        let state = state::noop();
+        let shim = create_test_shim()?;
+        TestsIndexShell::new(shim.bus()).run(index, state);
 
-//         // when
-//         shim.simulate_tests_passed()?;
-//         shim.ignore_event()?; // ignore BusEvent::ChangeDetected
+        // when
+        shim.simulate_tests_passed()?;
+        shim.ignore_event()?;
 
-//         // then
-//         assert!(shim.event_on_bus(&BusEvent::CoverageFailed)?);
+        // then
+        assert!(shim.no_event_on_bus()?);
 
-//         Ok(())
-//     }
-// }
+        Ok(())
+    }
+}

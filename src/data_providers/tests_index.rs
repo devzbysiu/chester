@@ -43,12 +43,13 @@ impl TIndex for DefaultTestsIndex {
         };
 
         let tests: Vec<String> = output.lines().map(ToString::to_string).collect();
-        let new_tests_set = BTreeSet::from_iter(tests);
-        let mut current_tests = self.tests.borrow_mut();
-        debug!("diff: {}", current_tests.difference(&new_tests_set).count());
-        if current_tests.is_empty() || current_tests.difference(&new_tests_set).count() != 0 {
+        let new_tests = BTreeSet::from_iter(tests);
+        let mut curr_tests = self.tests.borrow_mut();
+        let diff = curr_tests.symmetric_difference(&new_tests).count();
+        debug!("diff: {}", diff);
+        if curr_tests.is_empty() || diff != 0 {
             debug!("tests changed, or initial set is empty");
-            *current_tests = new_tests_set;
+            *curr_tests = new_tests;
             return Ok(IndexStatus::TestsChanged);
         }
 
@@ -114,7 +115,7 @@ mod test {
         // given
         init_tracing();
         let cfg = ConfigBuilder::default()
-            .list_tests_cmd(Cmd::new("echo", &["test1\ntest2\ntest3\n"]))
+            .list_tests_cmd(Cmd::new("echo", &["test1\ntest2\ntest3"]))
             .build()?;
         let tmpdir = tempdir()?;
         let state = noop();

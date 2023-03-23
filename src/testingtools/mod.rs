@@ -7,6 +7,7 @@ pub mod check_runner;
 pub mod coverage_runner;
 pub mod state;
 pub mod test_runner;
+pub mod tests_index;
 pub mod unit;
 
 pub fn pipe<T>() -> (Tx<T>, Spy<T>)

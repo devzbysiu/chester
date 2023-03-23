@@ -62,6 +62,11 @@ impl TestShim {
         Ok(())
     }
 
+    pub fn simulate_tests_passed(&self) -> Result<()> {
+        self.publ.send(BusEvent::TestsPassed)?;
+        Ok(())
+    }
+
     pub fn simulate_tests_changed(&self) -> Result<()> {
         self.publ.send(BusEvent::TestsChanged)?;
         Ok(())
@@ -90,8 +95,30 @@ impl TestShim {
             Err(TryRecvError::Empty) => {
                 drop(rx);
                 drop(t);
-                // receiving event took more than 500 milliseconds
+                // receiving event took more than 200 milliseconds
                 Ok(false)
+            }
+            Err(TryRecvError::Disconnected) => unreachable!(),
+        }
+    }
+
+    pub fn no_event_on_bus(&self) -> Result<bool> {
+        let (tx, rx) = channel();
+        let sub = self.sub.clone();
+        let t = thread::spawn(move || -> Result<()> {
+            tx.send(sub.recv()?)?;
+            Ok(())
+        });
+
+        thread::sleep(Duration::from_millis(200));
+
+        match rx.try_recv() {
+            Ok(_) => Ok(false),
+            Err(TryRecvError::Empty) => {
+                drop(rx);
+                drop(t);
+                // receiving event took more than 200 milliseconds
+                Ok(true)
             }
             Err(TryRecvError::Disconnected) => unreachable!(),
         }
