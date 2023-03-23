@@ -98,16 +98,16 @@ The next step is not triggered unless the previous one is completed with success
 
 ## Chester API
 
-### Tests status
-
-```bash
-curl --unix-socket "/run/user/$(id -u)/chester.sock" http://chester/tests/status
-```
-
 ### Check status
 
 ```bash
 curl --unix-socket "/run/user/$(id -u)/chester.sock" http://chester/check/status
+```
+
+### Tests status
+
+```bash
+curl --unix-socket "/run/user/$(id -u)/chester.sock" http://chester/tests/status
 ```
 
 ### Coverage status
@@ -116,7 +116,7 @@ curl --unix-socket "/run/user/$(id -u)/chester.sock" http://chester/check/status
 curl --unix-socket "/run/user/$(id -u)/chester.sock" http://chester/coverage/status
 ```
 
-### Update repository on which tests are run
+### Update repository on which tests are running
 
 ```bash
 curl --unix-socket "/run/user/$(id -u)/chester.sock" \
