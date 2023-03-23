@@ -23,17 +23,18 @@ impl TestsShell {
         let sub = self.bus.subscriber();
         let publ = self.bus.publisher();
         thread::spawn(move || -> Result<()> {
+            let sw = st.writer();
             loop {
                 if let Ok(BusEvent::CheckPassed) = sub.recv() {
                     debug!("running tests");
-                    st.writer().tests(TestsState::Pending)?;
+                    sw.tests(TestsState::Pending)?;
                     if let Ok(TestsRunStatus::Success) = tr.run(st.reader().repo_root()?) {
                         debug!("tests passed");
-                        st.writer().tests(TestsState::Success)?;
+                        sw.tests(TestsState::Success)?;
                         publ.send(BusEvent::TestsPassed)?;
                     } else {
                         debug!("tests failed");
-                        st.writer().tests(TestsState::Failure)?;
+                        sw.tests(TestsState::Failure)?;
                         publ.send(BusEvent::TestsFailed)?;
                     }
                 } else {

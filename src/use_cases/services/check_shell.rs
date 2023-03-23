@@ -23,17 +23,18 @@ impl CheckShell {
         let sub = self.bus.subscriber();
         let publ = self.bus.publisher();
         thread::spawn(move || -> Result<()> {
+            let sw = st.writer();
             loop {
                 if let Ok(BusEvent::ChangeDetected) = sub.recv() {
                     debug!("running check");
-                    st.writer().check(CheckState::Pending)?;
+                    sw.check(CheckState::Pending)?;
                     if let Ok(CheckRunStatus::Success) = cr.run(st.reader().repo_root()?) {
                         debug!("check passed");
-                        st.writer().check(CheckState::Success)?;
+                        sw.check(CheckState::Success)?;
                         publ.send(BusEvent::CheckPassed)?;
                     } else {
                         debug!("check failed");
-                        st.writer().check(CheckState::Failure)?;
+                        sw.check(CheckState::Failure)?;
                         publ.send(BusEvent::CheckFailed)?;
                     }
                 } else {

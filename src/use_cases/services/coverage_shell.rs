@@ -23,17 +23,18 @@ impl CoverageShell {
         let sub = self.bus.subscriber();
         let publ = self.bus.publisher();
         thread::spawn(move || -> Result<()> {
+            let sw = st.writer();
             loop {
                 if let Ok(BusEvent::TestsChanged) = sub.recv() {
                     debug!("running coverage");
-                    st.writer().coverage(CoverageState::Pending)?;
+                    sw.coverage(CoverageState::Pending)?;
                     if let Ok(CoverageRunStatus::Success(val)) = cr.run(st.reader().repo_root()?) {
                         debug!("coverage calculated: {val}");
-                        st.writer().coverage(CoverageState::Success(val))?;
+                        sw.coverage(CoverageState::Success(val))?;
                         publ.send(BusEvent::GotCoverage(val))?;
                     } else {
                         debug!("coverage failed");
-                        st.writer().coverage(CoverageState::Failure)?;
+                        sw.coverage(CoverageState::Failure)?;
                         publ.send(BusEvent::CoverageFailed)?;
                     }
                 } else {
