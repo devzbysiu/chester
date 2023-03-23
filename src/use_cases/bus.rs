@@ -9,7 +9,6 @@ pub type EventPublisher = Arc<dyn Publisher>;
 
 pub trait Bus: Send + Sync {
     fn publisher(&self) -> EventPublisher;
-
     fn subscriber(&self) -> EventSubscriber;
 }
 
@@ -25,15 +24,12 @@ pub trait Subscriber: Sync + Send {
 pub enum BusEvent {
     ChangeDetected,
 
-    TestsChanged,
-    TestsNotChanged,
+    CheckPassed,
+    CheckFailed,
 
     TestsPassed,
     TestsFailed,
 
-    CheckPassed,
-    CheckFailed,
-
-    GotCoverage(f32),
-    CoverageFailed,
+    TestsChanged,
+    TestsNotChanged,
 }
