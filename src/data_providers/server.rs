@@ -6,6 +6,9 @@ use crate::result::ServerErr;
 use crate::use_cases::state::State;
 use crate::use_cases::state::{StateReader, StateWriter};
 
+use actix_service::ServiceFactory;
+use actix_web::body::MessageBody;
+use actix_web::dev::{ServiceRequest, ServiceResponse};
 use actix_web::web::{Data, Json};
 use actix_web::{get, middleware, put, App, HttpResponse, HttpServer};
 use anyhow::anyhow;
@@ -22,23 +25,36 @@ type StateReaderData = Data<StateReader>;
 pub async fn start_server(state: State) -> std::io::Result<()> {
     let socket_path = dirs::runtime_dir().unwrap_or(PathBuf::from("/run"));
     let socket_path = socket_path.join("chester.sock");
-    HttpServer::new(move || {
-        App::new()
-            .wrap(TracingLogger::default())
-            .wrap(middleware::DefaultHeaders::new())
-            .wrap(middleware::Compress::default())
-            .wrap(middleware::Logger::default())
-            .app_data(Data::new(state.reader()))
-            .app_data(Data::new(state.writer()))
-            .service(tests_status_endpt)
-            .service(check_status_endpt)
-            .service(coverage_status_endpt)
-            .service(change_root)
-    })
-    .bind_uds(socket_path)?
-    .workers(1)
-    .run()
-    .await
+    HttpServer::new(move || app(&state))
+        .bind_uds(socket_path)?
+        .workers(1)
+        .run()
+        .await
+}
+
+// NOTE: Complex type taken from https://github.com/actix/actix-web/issues/1190
+pub fn app(
+    state: &State,
+) -> App<
+    impl ServiceFactory<
+        ServiceRequest,
+        Response = ServiceResponse<impl MessageBody>,
+        Config = (),
+        InitError = (),
+        Error = actix_web::Error,
+    >,
+> {
+    App::new()
+        .wrap(TracingLogger::default())
+        .wrap(middleware::DefaultHeaders::new())
+        .wrap(middleware::Compress::default())
+        .wrap(middleware::Logger::default())
+        .app_data(Data::new(state.reader()))
+        .app_data(Data::new(state.writer()))
+        .service(tests_status_endpt)
+        .service(check_status_endpt)
+        .service(coverage_status_endpt)
+        .service(change_root)
 }
 
 #[instrument(level = "trace")]
@@ -75,7 +91,7 @@ fn server_err<S: Into<String>>(msg: S) -> ServerErr {
     ServerErr::Generic(anyhow!(msg.into()))
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 struct TestsStatusResp {
     tests_status: TestsState,
 }
@@ -120,4 +136,41 @@ async fn change_root(state: StateWriterData, req: Json<ChangeRootReq>) -> Result
 #[derive(Debug, Deserialize)]
 struct ChangeRootReq {
     repo_root: RepoRoot,
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    use crate::testingtools::state;
+
+    use actix_web::body::to_bytes;
+    use actix_web::test::{call_service, init_service, TestRequest};
+    use anyhow::Result;
+    use serde::de::DeserializeOwned;
+
+    #[actix_web::test]
+    async fn calling_tests_status_endpoint_returns_response_with_status() -> Result<()> {
+        // given
+        let svc = init_service(app(&state::working())).await;
+        let req = TestRequest::default().uri("/tests/status").to_request();
+
+        // when
+        let resp = call_service(&svc, req).await;
+
+        // then
+        assert!(resp.status().is_success());
+        let resp: TestsStatusResp = to_resp(resp).await;
+        assert_eq!(resp.tests_status, TestsState::Success);
+
+        Ok(())
+    }
+
+    async fn to_resp<T: DeserializeOwned>(resp: ServiceResponse<impl MessageBody>) -> T {
+        let resp = resp.into_body();
+        let Ok(resp) = to_bytes(resp).await else {
+            panic!("failed to convert to bytes");
+        };
+        serde_json::from_slice(&resp).unwrap()
+    }
 }

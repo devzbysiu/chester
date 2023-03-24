@@ -1,7 +1,7 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
-#[derive(Serialize, Debug, Eq, PartialEq, Clone)]
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum TestsState {
     Pending,
