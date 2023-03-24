@@ -7,23 +7,36 @@ use std::process::{Command, ExitStatus, Stdio};
 
 pub fn cfg() -> Result<Config, CfgErr> {
     Ok(ConfigBuilder::default()
-        .tests_cmd(Cmd::new("cargo", &["test"]))
-        .list_tests_cmd(Cmd::new(
-            "cargo",
-            &["-q", "test", "--", "--list", "--format=terse"],
-        ))
-        .check_cmd(Cmd::new("cargo", &["check"]))
-        .coverage_cmd(Cmd::new(
-            "cargo",
-            &[
-                "tarpaulin",
-                "--skip-clean",
-                "--target-dir",
-                "./tarpaulin-target",
-            ],
-        ))
+        .tests_cmd(tests_cmd())
+        .list_tests_cmd(list_tests_cmd())
+        .check_cmd(check_cmd())
+        .coverage_cmd(coverage_cmd())
         .ignored_paths(vec![IgnoredPath::new("target")?, IgnoredPath::new(".git")?])
         .build()?)
+}
+
+fn tests_cmd() -> Cmd {
+    Cmd::new("cargo", &["test"])
+}
+
+fn list_tests_cmd() -> Cmd {
+    Cmd::new("cargo", &["-q", "test", "--", "--list", "--format=terse"])
+}
+
+fn check_cmd() -> Cmd {
+    Cmd::new("cargo", &["check"])
+}
+
+fn coverage_cmd() -> Cmd {
+    Cmd::new(
+        "cargo",
+        &[
+            "tarpaulin",
+            "--skip-clean",
+            "--target-dir",
+            "./tarpaulin-target",
+        ],
+    )
 }
 
 #[derive(Debug, Default, Clone, Builder)]
