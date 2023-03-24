@@ -149,3 +149,22 @@ pub enum CfgErr {
     #[error("Failed to configure ignored paths.")]
     IgnoredPath(#[from] IgnoredPathErr),
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    use anyhow::anyhow;
+
+    #[test]
+    fn server_error_implements_response_error() {
+        // given
+        let err = ServerErr::Generic(anyhow!("some error"));
+
+        // when
+        let status = err.status_code();
+
+        // then
+        assert_eq!(status, 500);
+    }
+}
