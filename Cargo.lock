@@ -346,7 +346,6 @@ dependencies = [
  "tracing",
  "tracing-actix-web",
  "tracing-appender",
- "tracing-forest",
  "tracing-subscriber",
 ]
 
@@ -1728,18 +1727,6 @@ checksum = "24eb03ba0eab1fd845050058ce5e616558e8f8d8fca633e6b163fe25c797213a"
 dependencies = [
  "once_cell",
  "valuable",
-]
-
-[[package]]
-name = "tracing-forest"
-version = "0.1.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "119324027fc01804d9f83aefb7d80fda2e8fbe7c28e0acc59187cbd751a12915"
-dependencies = [
- "smallvec",
- "thiserror",
- "tracing",
- "tracing-subscriber",
 ]
 
 [[package]]
