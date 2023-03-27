@@ -15,16 +15,16 @@ type TestsSet = RefCell<BTreeSet<String>>;
 #[derive(Debug)]
 pub struct DefaultTestsIndex {
     cfg: Config,
-    tests: TestsSet,
-    sr: StateReader,
+    curr_tests: TestsSet,
+    state: StateReader,
 }
 
 impl DefaultTestsIndex {
-    pub fn make(cfg: Config, sr: StateReader) -> TestsIndex {
+    pub fn make(cfg: Config, state: StateReader) -> TestsIndex {
         Box::new(Self {
             cfg,
-            tests: RefCell::new(BTreeSet::new()),
-            sr,
+            curr_tests: RefCell::new(BTreeSet::new()),
+            state,
         })
     }
 }
@@ -32,22 +32,23 @@ impl DefaultTestsIndex {
 impl TIndex for DefaultTestsIndex {
     #[instrument(skip(self))]
     fn refresh(&self, repo_root: RepoRoot) -> Result<IndexStatus, IndexErr> {
-        if self.sr.tests()? == TestsState::Failure {
+        if self.state.tests()? == TestsState::Failure {
             debug!("tests failed previously, they need to be rerun");
             return Ok(IndexStatus::TestsChanged);
         }
 
-        let Ok(output) = self.cfg.list_tests_cmd.stdout(repo_root) else {
+        let Ok(list_of_tests) = self.cfg.list_tests_cmd.stdout(repo_root) else {
             debug!("listing tests command failed");
             return Ok(IndexStatus::Failure);
         };
 
-        let tests: Vec<String> = output.lines().map(ToString::to_string).collect();
-        let new_tests = BTreeSet::from_iter(tests);
-        let mut curr_tests = self.tests.borrow_mut();
-        let diff = curr_tests.symmetric_difference(&new_tests).count();
-        debug!("diff: {}", diff);
-        if curr_tests.is_empty() || diff != 0 {
+        let new_tests: Vec<String> = list_of_tests.lines().map(ToString::to_string).collect();
+        let new_tests = BTreeSet::from_iter(new_tests);
+        let mut curr_tests = self.curr_tests.borrow_mut();
+        let different_tests_num = curr_tests.symmetric_difference(&new_tests).count();
+        debug!("diff: {}", different_tests_num);
+
+        if curr_tests.is_empty() || different_tests_num != 0 {
             debug!("tests changed, or initial set is empty");
             *curr_tests = new_tests;
             return Ok(IndexStatus::TestsChanged);
@@ -121,12 +122,12 @@ mod test {
         let state = noop();
         let index = DefaultTestsIndex {
             cfg,
-            tests: RefCell::new(BTreeSet::from([
+            curr_tests: RefCell::new(BTreeSet::from([
                 "test1".into(),
                 "test2".into(),
                 "test3".into(),
             ])),
-            sr: state.reader(),
+            state: state.reader(),
         };
         let repo_root = RepoRoot::new(&tmpdir);
 
@@ -171,8 +172,8 @@ mod test {
         let state = noop();
         let index = DefaultTestsIndex {
             cfg,
-            tests: RefCell::new(BTreeSet::from(["different-test".into()])),
-            sr: state.reader(),
+            curr_tests: RefCell::new(BTreeSet::from(["different-test".into()])),
+            state: state.reader(),
         };
         let repo_root = RepoRoot::new(&tmpdir);
 
