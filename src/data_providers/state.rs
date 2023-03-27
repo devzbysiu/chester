@@ -27,14 +27,14 @@ impl InMemoryState {
         let check_state = Arc::new(RwLock::new(CheckState::default()));
         let coverage_state = Arc::new(RwLock::new(CoverageState::default()));
         let repo_root = Arc::new(RwLock::new(RepoRoot::default()));
-        let reader = InMemoryStateRead::make(
+        let reader = InMemoryStateReader::make(
             tests_state.clone(),
             check_state.clone(),
             coverage_state.clone(),
             repo_root.clone(),
         );
         let writer =
-            InMemoryStateWrite::make(tests_state, check_state, coverage_state, repo_root, publ);
+            InMemoryStateWriter::make(tests_state, check_state, coverage_state, repo_root, publ);
         Arc::new(Self { reader, writer })
     }
 }
@@ -50,14 +50,14 @@ impl AppState for InMemoryState {
 }
 
 #[derive(Debug)]
-pub struct InMemoryStateRead {
+pub struct InMemoryStateReader {
     tests_state: TestsStatus,
     check_state: CheckStatus,
     coverage_state: CoverageStatus,
     repo_root: RepoRootState,
 }
 
-impl InMemoryStateRead {
+impl InMemoryStateReader {
     fn make(
         tests_state: TestsStatus,
         check_state: CheckStatus,
@@ -73,7 +73,7 @@ impl InMemoryStateRead {
     }
 }
 
-impl AppStateReader for InMemoryStateRead {
+impl AppStateReader for InMemoryStateReader {
     #[instrument(level = "trace")]
     fn tests(&self) -> Result<TestsState, StateReaderErr> {
         let tests_state = self.tests_state.read().expect("poisoned mutex");
@@ -99,7 +99,7 @@ impl AppStateReader for InMemoryStateRead {
     }
 }
 
-pub struct InMemoryStateWrite {
+pub struct InMemoryStateWriter {
     tests_state: TestsStatus,
     check_state: CheckStatus,
     coverage_state: CoverageStatus,
@@ -107,7 +107,7 @@ pub struct InMemoryStateWrite {
     publ: EventPublisher,
 }
 
-impl InMemoryStateWrite {
+impl InMemoryStateWriter {
     fn make(
         tests_state: TestsStatus,
         check_state: CheckStatus,
@@ -125,7 +125,7 @@ impl InMemoryStateWrite {
     }
 }
 
-impl AppStateWriter for InMemoryStateWrite {
+impl AppStateWriter for InMemoryStateWriter {
     #[instrument(level = "trace", skip(self))]
     fn tests(&self, new_tests_state: TestsState) -> Result<(), StateWriterErr> {
         let mut tests_state = self.tests_state.write().expect("poisoned mutex");
