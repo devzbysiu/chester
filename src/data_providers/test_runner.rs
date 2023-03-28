@@ -25,10 +25,12 @@ impl TRunner for DefaultTestRunner {
             debug!("command failed");
             return Ok(TestsRunStatus::Failure);
         };
+
         if !status.success() {
             debug!("tests failed with: {status}");
             return Ok(TestsRunStatus::Failure);
         }
+
         debug!("tests succeeded");
         Ok(TestsRunStatus::Success)
     }

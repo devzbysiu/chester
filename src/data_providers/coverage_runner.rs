@@ -3,10 +3,12 @@ use crate::entities::repo_root::RepoRoot;
 use crate::result::CoverageErr;
 use crate::use_cases::coverage_runner::{CovRunner, CoverageRunStatus, CoverageRunner};
 
+use once_cell::sync::Lazy;
 use regex::Regex;
 use tracing::{debug, error, instrument};
 
 const COVERAGE: usize = 1;
+static COVERAGE_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"(\d+.\d{2})% coverage").unwrap());
 
 #[derive(Debug)]
 pub struct DefaultCoverageRunner {
@@ -24,19 +26,21 @@ impl CovRunner for DefaultCoverageRunner {
     fn run(&self, repo_root: RepoRoot) -> Result<CoverageRunStatus, CoverageErr> {
         let repo_root = repo_root.to_string();
         debug!("running coverage in {repo_root}");
-        let re = Regex::new(r"(\d+.\d{2})% coverage")?;
         let Ok(output) = self.cfg.coverage_cmd.stdout(repo_root) else {
             error!("command failed");
             return Ok(CoverageRunStatus::Failure);
         };
+
         let Some(last_line) = output.lines().last() else {
             error!("no last line in command output");
             return Ok(CoverageRunStatus::Failure);
         };
-        let Some(caps) = re.captures(last_line) else {
+
+        let Some(caps) = COVERAGE_RE.captures(last_line) else {
             error!("no captures in '{last_line}'");
             return Ok(CoverageRunStatus::Failure);
         };
+
         // NOTE: the capture with idx `1` is always present, because we have only one group,
         // so if there is any match (checked above) then we are sure, that the idx `1` is present
         // (idx `0` is always whole match (all groups))
@@ -49,6 +53,7 @@ impl CovRunner for DefaultCoverageRunner {
                 "{coverage} value is invalid for code coverage"
             )));
         }
+
         Ok(CoverageRunStatus::Success(coverage))
     }
 }

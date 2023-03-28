@@ -52,6 +52,7 @@ impl FsChangeWatcher {
         if self.cfg.ignored_paths.is_empty() {
             return false;
         }
+
         let ignored_paths = &self.cfg.ignored_paths;
         for ev in events {
             let event_path = &ev.path;
@@ -62,6 +63,7 @@ impl FsChangeWatcher {
             trace!("change detected: {event_path:?}");
             return false;
         }
+
         true
     }
 }
@@ -81,6 +83,7 @@ impl Watcher for FsChangeWatcher {
         if *self.repo_root.borrow() != passed_root {
             self.reattach_watcher(passed_root)?;
         }
+
         let rx = self.rx.borrow();
         loop {
             match rx.recv() {

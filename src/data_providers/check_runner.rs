@@ -25,10 +25,12 @@ impl CRunner for DefaultCheckRunner {
             debug!("command failed");
             return Ok(CheckRunStatus::Failure);
         };
+
         if !status.success() {
             debug!("check failed with: {status}");
             return Ok(CheckRunStatus::Failure);
         }
+
         debug!("check succeeded");
         Ok(CheckRunStatus::Success)
     }
