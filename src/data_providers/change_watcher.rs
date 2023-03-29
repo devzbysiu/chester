@@ -33,17 +33,12 @@ impl FsChangeWatcher {
     }
 
     #[instrument(skip(self))]
-    fn reattach_watcher(&self, passed_root: RepoRoot) -> Result<(), WatcherErr> {
-        debug!("repo root changed to '{passed_root:?}', recreating watcher");
-        let (new_rx, new_watcher) = setup_watcher(&passed_root)?;
-        let mut rx = self.rx.borrow_mut();
-        let mut watcher = self.watcher.borrow_mut();
-        let mut repo_root = self.repo_root.borrow_mut();
-
-        *rx = new_rx;
-        *watcher = new_watcher;
-        *repo_root = passed_root;
-
+    fn reattach_watcher(&self, new_root: RepoRoot) -> Result<(), WatcherErr> {
+        debug!("repo root changed to '{new_root:?}', recreating watcher");
+        let (new_rx, new_watcher) = setup_watcher(&new_root)?;
+        self.rx.replace(new_rx);
+        self.watcher.replace(new_watcher);
+        self.repo_root.replace(new_root);
         Ok(())
     }
 
