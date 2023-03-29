@@ -19,7 +19,6 @@ impl DefaultCheckRunner {
 impl CRunner for DefaultCheckRunner {
     #[instrument(skip(self))]
     fn run(&self, repo_root: RepoRoot) -> Result<CheckRunStatus, CheckErr> {
-        let repo_root = repo_root.to_string();
         debug!("running check in {repo_root}");
         let Ok(status) = self.cfg.check_cmd.status(&repo_root) else {
             debug!("command failed");
