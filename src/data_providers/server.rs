@@ -13,8 +13,9 @@ use actix_web::web::{Data, Json};
 use actix_web::{get, middleware, put, App, HttpResponse, HttpServer};
 use anyhow::anyhow;
 use serde::{Deserialize, Serialize};
+use std::fmt::Display;
 use std::path::PathBuf;
-use tracing::{debug, instrument, trace};
+use tracing::{debug, error, instrument, trace};
 use tracing_actix_web::TracingLogger;
 
 type Result<T> = std::result::Result<T, ServerErr>;
@@ -62,7 +63,7 @@ pub fn app(
 async fn tests_status_endpt(state: StateReaderData) -> Result<Json<TestsStatusResp>> {
     let status = state
         .tests()
-        .map_err(|_| server_err("Error while checking tests status."))?;
+        .map_err(|e| server_err("Error while checking tests status.", e))?;
     trace!("responding with {status}");
     Ok(Json(TestsStatusResp::new(status)))
 }
@@ -72,7 +73,7 @@ async fn tests_status_endpt(state: StateReaderData) -> Result<Json<TestsStatusRe
 async fn check_status_endpt(state: StateReaderData) -> Result<Json<CheckStatusResp>> {
     let status = state
         .check()
-        .map_err(|_| server_err("Error while checking tests status."))?;
+        .map_err(|e| server_err("Error while checking tests status.", e))?;
     trace!("responding with {status}");
     Ok(Json(CheckStatusResp::new(status)))
 }
@@ -82,13 +83,15 @@ async fn check_status_endpt(state: StateReaderData) -> Result<Json<CheckStatusRe
 async fn coverage_status_endpt(state: StateReaderData) -> Result<Json<CoverageStatusResp>> {
     let status = state
         .coverage()
-        .map_err(|_| server_err("Error while checking coverage status."))?;
+        .map_err(|e| server_err("Error while checking coverage status.", e))?;
     trace!("responding with {status}");
     Ok(Json(CoverageStatusResp::new(status)))
 }
 
-fn server_err<S: Into<String>>(msg: S) -> ServerErr {
-    ServerErr::Generic(anyhow!(msg.into()))
+fn server_err<S: Into<String>, E: Display>(msg: S, e: E) -> ServerErr {
+    let msg = msg.into();
+    error!("{msg}:{e}");
+    ServerErr::Generic(anyhow!(msg))
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
@@ -129,7 +132,7 @@ async fn change_root(state: StateWriterData, req: Json<ChangeRootReq>) -> Result
     debug!("changing repo root to: {}", req.repo_root);
     state
         .repo_root(req.repo_root.clone())
-        .map_err(|_| server_err("Error while changing repo root."))?;
+        .map_err(|e| server_err("Error while changing repo root.", e))?;
     Ok(HttpResponse::NoContent().into()) // 204
 }
 
