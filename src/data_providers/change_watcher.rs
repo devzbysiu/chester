@@ -3,7 +3,7 @@ use crate::entities::repo_root::RepoRoot;
 use crate::result::WatcherErr;
 use crate::use_cases::change_watcher::{ChangeWatcher, Watcher};
 
-use notify::{RecommendedWatcher, RecursiveMode};
+use notify::{RecommendedWatcher, RecursiveMode::Recursive};
 use notify_debouncer_mini::{new_debouncer, DebouncedEvent, Debouncer};
 use std::cell::RefCell;
 use std::path::Path;
@@ -65,10 +65,9 @@ impl FsChangeWatcher {
 
 #[instrument(skip(path))]
 fn setup_watcher<P: AsRef<Path>>(path: P) -> Result<(Rx, Dbcr), WatcherErr> {
-    let path = path.as_ref();
     let (tx, rx) = channel();
     let mut debouncer = new_debouncer(Duration::from_millis(500), None, tx)?;
-    debouncer.watcher().watch(path, RecursiveMode::Recursive)?;
+    debouncer.watcher().watch(path.as_ref(), Recursive)?;
     Ok((rx, debouncer))
 }
 
