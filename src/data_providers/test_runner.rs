@@ -19,7 +19,6 @@ impl DefaultTestRunner {
 impl TRunner for DefaultTestRunner {
     #[instrument(skip(self))]
     fn run(&self, repo_root: RepoRoot) -> Result<TestsRunStatus, RunnerErr> {
-        let repo_root = repo_root.to_string();
         debug!("running tests in {repo_root}");
         let Ok(status) = self.cfg.tests_cmd.status(repo_root) else {
             debug!("command failed");
