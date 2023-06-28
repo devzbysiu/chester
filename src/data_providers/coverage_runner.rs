@@ -36,7 +36,7 @@ impl CovRunner for DefaultCoverageRunner {
             return Ok(CoverageRunStatus::Failure);
         };
 
-        let Some(caps) = COVERAGE_RE.captures(last_line) else {
+        let Some(captures) = COVERAGE_RE.captures(last_line) else {
             error!("no captures in '{last_line}'");
             return Ok(CoverageRunStatus::Failure);
         };
@@ -44,7 +44,7 @@ impl CovRunner for DefaultCoverageRunner {
         // NOTE: the capture with idx `1` is always present, because we have only one group,
         // so if there is any match (checked above) then we are sure, that the idx `1` is present
         // (idx `0` is always whole match (all groups))
-        let coverage = &caps[COVERAGE];
+        let coverage = &captures[COVERAGE];
         // NOTE: if we captured two groups of digits divided by a dot, we can be sure that
         // it will parse to a `f32`
         let coverage = coverage.parse::<f32>().unwrap();
