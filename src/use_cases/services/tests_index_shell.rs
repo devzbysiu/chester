@@ -8,7 +8,7 @@ use tracing::{debug, error, instrument, trace};
 
 type Result<T> = std::result::Result<T, IndexErr>;
 
-/// Keeps track of the tests set and triggers code coverage if tests set changed.
+/// Triggers code coverage if tests set is changed.
 ///
 /// When the tests are run, `TestsIndexShell` checks tests status.
 /// If the tests failed, then nothing more happens.

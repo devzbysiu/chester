@@ -9,6 +9,17 @@ use tracing::{debug, instrument, trace};
 
 type Result<T> = std::result::Result<T, RunnerErr>;
 
+/// Runs tests and updates tests state when check passed.
+///
+/// `TestsShell` first waits for the event describing the result of the check stage.
+/// If check stage failed, nothing happens.
+/// If check stage succeeds, `TestsShell` sets the tests state as `TestsState::Pending`, then
+/// runs the tests.
+/// Tests state is updated accordingly to the result of the tests.
+///
+/// It publishes following events:
+/// - `BusEvent::TestsPassed` - when check passed and tests passed as well
+/// - `BusEvent::TestsFailed` - when check passed, but tests failed
 pub struct TestsShell {
     bus: EventBus,
 }
