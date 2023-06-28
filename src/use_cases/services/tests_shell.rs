@@ -26,7 +26,7 @@ impl TestsShell {
             let sw = st.writer();
             loop {
                 let Ok(BusEvent::CheckPassed) = sub.recv() else {
-                    trace!("no change detected");
+                    trace!("check failed, skipping tests");
                     continue;
                 };
 

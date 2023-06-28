@@ -24,7 +24,7 @@ impl CoverageShell {
         thread::spawn(move || -> Result<()> {
             let sw = st.writer();
             loop {
-                let Ok(BusEvent::TestsChanged) = sub.recv() else {
+                let Ok(BusEvent::TestsSetChanged) = sub.recv() else {
                     trace!("no change detected");
                     continue;
                 };

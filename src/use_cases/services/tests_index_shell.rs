@@ -8,6 +8,15 @@ use tracing::{debug, error, instrument, trace};
 
 type Result<T> = std::result::Result<T, IndexErr>;
 
+/// Keeps track of the tests set and triggers code coverage if tests set changed.
+///
+/// When the tests are run, `TestsIndexShell` checks tests status.
+/// If the tests failed, then nothing more happens.
+/// If the tests finished with success, then it refreshes tests index.
+///
+/// It publishes following events:
+/// - `BusEvent::TestsSetChanged` - when tests passed and tests set is changed
+/// - `BusEvent::TestsSetNotChanged` - when tests passed, but tests set is not changed
 pub struct TestsIndexShell {
     bus: EventBus,
 }
@@ -24,19 +33,19 @@ impl TestsIndexShell {
         thread::spawn(move || -> Result<()> {
             loop {
                 let Ok(BusEvent::TestsPassed) = sub.recv() else {
-                    trace!("no change detected");
+                    trace!("tests failed, skipping index refresh");
                     continue;
                 };
 
                 debug!("checking if tests changed");
                 match index.refresh(st.reader().repo_root()?) {
-                    Ok(IndexStatus::TestsChanged) => {
+                    Ok(IndexStatus::TestsSetChanged) => {
                         debug!("tests change detected");
-                        publ.send(BusEvent::TestsChanged)?;
+                        publ.send(BusEvent::TestsSetChanged)?;
                     }
-                    Ok(IndexStatus::TestsNotChanged) => {
+                    Ok(IndexStatus::TestsSetNotChanged) => {
                         debug!("tests not changed");
-                        publ.send(BusEvent::TestsNotChanged)?;
+                        publ.send(BusEvent::TestsSetNotChanged)?;
                     }
                     Ok(IndexStatus::Failure) => error!("index refresh failed"),
                     Err(e) => error!("error while running index refresh: {e:?}"),
@@ -61,7 +70,7 @@ mod test {
     fn index_is_started_when_tests_passed() -> Result<()> {
         // given
         init_tracing();
-        let (spy, index) = tracked(working(IndexStatus::TestsChanged));
+        let (spy, index) = tracked(working(IndexStatus::TestsSetChanged));
         let state = state::noop();
         let shim = create_test_shim()?;
         TestsIndexShell::new(shim.bus()).run(index, state);
@@ -79,7 +88,7 @@ mod test {
     fn when_tests_changed_there_is_correct_event_on_the_bus() -> Result<()> {
         // given
         init_tracing();
-        let index = working(IndexStatus::TestsChanged);
+        let index = working(IndexStatus::TestsSetChanged);
         let state = state::noop();
         let shim = create_test_shim()?;
         TestsIndexShell::new(shim.bus()).run(index, state);
@@ -89,7 +98,7 @@ mod test {
         shim.ignore_event()?;
 
         // then
-        assert!(shim.event_on_bus(&BusEvent::TestsChanged)?);
+        assert!(shim.event_on_bus(&BusEvent::TestsSetChanged)?);
 
         Ok(())
     }
@@ -98,7 +107,7 @@ mod test {
     fn when_tests_did_not_change_there_is_correct_event_on_the_bus() -> Result<()> {
         // given
         init_tracing();
-        let index = working(IndexStatus::TestsNotChanged);
+        let index = working(IndexStatus::TestsSetNotChanged);
         let state = state::noop();
         let shim = create_test_shim()?;
         TestsIndexShell::new(shim.bus()).run(index, state);
@@ -108,7 +117,7 @@ mod test {
         shim.ignore_event()?;
 
         // then
-        assert!(shim.event_on_bus(&BusEvent::TestsNotChanged)?);
+        assert!(shim.event_on_bus(&BusEvent::TestsSetNotChanged)?);
 
         Ok(())
     }

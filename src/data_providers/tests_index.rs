@@ -34,7 +34,7 @@ impl TIndex for DefaultTestsIndex {
     fn refresh(&self, repo_root: RepoRoot) -> Result<IndexStatus, IndexErr> {
         if self.state.tests()? == TestsState::Failure {
             debug!("tests failed previously, they need to be rerun");
-            return Ok(IndexStatus::TestsChanged);
+            return Ok(IndexStatus::TestsSetChanged);
         }
 
         let Ok(list_of_tests) = self.cfg.list_tests_cmd.stdout(repo_root) else {
@@ -51,10 +51,10 @@ impl TIndex for DefaultTestsIndex {
         if curr_tests.is_empty() || different_tests_num != 0 {
             debug!("tests changed, or initial set is empty");
             *curr_tests = new_tests;
-            return Ok(IndexStatus::TestsChanged);
+            return Ok(IndexStatus::TestsSetChanged);
         }
 
-        Ok(IndexStatus::TestsNotChanged)
+        Ok(IndexStatus::TestsSetNotChanged)
     }
 }
 
@@ -86,7 +86,7 @@ mod test {
         let res = index.refresh(repo_root)?;
 
         // then
-        assert_eq!(res, IndexStatus::TestsChanged);
+        assert_eq!(res, IndexStatus::TestsSetChanged);
 
         Ok(())
     }
@@ -135,7 +135,7 @@ mod test {
         let res = index.refresh(repo_root)?;
 
         // then
-        assert_eq!(res, IndexStatus::TestsNotChanged);
+        assert_eq!(res, IndexStatus::TestsSetNotChanged);
 
         Ok(())
     }
@@ -156,7 +156,7 @@ mod test {
         let res = index.refresh(repo_root)?;
 
         // then
-        assert_eq!(res, IndexStatus::TestsChanged);
+        assert_eq!(res, IndexStatus::TestsSetChanged);
 
         Ok(())
     }
@@ -181,7 +181,7 @@ mod test {
         let res = index.refresh(repo_root)?;
 
         // then
-        assert_eq!(res, IndexStatus::TestsChanged);
+        assert_eq!(res, IndexStatus::TestsSetChanged);
 
         Ok(())
     }

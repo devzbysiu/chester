@@ -10,7 +10,7 @@ pub trait TIndex: Send {
 #[allow(unused)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum IndexStatus {
-    TestsChanged,
-    TestsNotChanged,
+    TestsSetChanged,
+    TestsSetNotChanged,
     Failure,
 }

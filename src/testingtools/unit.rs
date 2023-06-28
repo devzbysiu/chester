@@ -68,7 +68,7 @@ impl TestShim {
     }
 
     pub fn simulate_tests_changed(&self) -> Result<()> {
-        self.publ.send(BusEvent::TestsChanged)?;
+        self.publ.send(BusEvent::TestsSetChanged)?;
         Ok(())
     }
 

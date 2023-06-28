@@ -30,6 +30,6 @@ pub enum BusEvent {
     TestsPassed,
     TestsFailed,
 
-    TestsChanged,
-    TestsNotChanged,
+    TestsSetChanged,
+    TestsSetNotChanged,
 }
