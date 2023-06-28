@@ -9,7 +9,7 @@ use tracing::{debug, instrument, trace};
 
 type Result<T> = std::result::Result<T, RunnerErr>;
 
-/// Runs tests and updates tests state when check passed.
+/// When check passed, it runs tests, updates tests state and publishes result of the tests.
 ///
 /// `TestsShell` first waits for the event describing the result of the check stage.
 /// If check stage failed, nothing happens.

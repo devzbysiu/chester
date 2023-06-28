@@ -9,6 +9,16 @@ use tracing::{debug, instrument, trace};
 
 type Result<T> = std::result::Result<T, CoverageErr>;
 
+/// When tests set changed, it runs code coverage, updates coverage state and publishes result of
+/// the coverage.
+///
+/// `CoverageShell` first waits for the event describing the tests set.
+/// If tests set did not change, nothing happens.
+/// If tests set changed, `CoverageShell` sets the coverage state as `CoverageState::Pending`, then
+/// runs the tests coverage.
+/// Coverage state is updated accordingly to the result of the coverage.
+///
+/// It's the end of the pipeline, no event is published.
 pub struct CoverageShell {
     bus: EventBus,
 }

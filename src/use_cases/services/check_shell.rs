@@ -9,6 +9,17 @@ use tracing::{debug, instrument, trace};
 
 type Result<T> = std::result::Result<T, CheckErr>;
 
+/// When change is detected, it runs check, updates check state and publishes result of the check.
+///
+/// `CheckShell` first waits for the event meaning the change of files was detected.
+/// If change was not detected, nothing happens.
+/// If change was detected, `CheckShell` sets the check state as `CheckState::Pending`, then
+/// runs the check.
+/// Check state is updated accordingly to the result of the tests.
+///
+/// It publishes following events:
+/// - `BusEvent::CheckPassed` - when change was detected and check passed as well
+/// - `BusEvent::CheckFailed` - when change is detected, but check failed
 pub struct CheckShell {
     bus: EventBus,
 }
