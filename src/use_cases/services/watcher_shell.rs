@@ -8,6 +8,9 @@ use tracing::{debug, instrument};
 
 type Result<T> = std::result::Result<T, WatcherErr>;
 
+/// Watches for the change in the watched directory.
+///
+/// When change appears, it publishes `BusEvent::ChangeDetected`.
 pub struct ChangeWatcherShell {
     bus: EventBus,
 }
