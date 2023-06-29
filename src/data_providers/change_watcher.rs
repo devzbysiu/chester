@@ -14,6 +14,14 @@ use tracing::{debug, instrument, trace};
 type Rx = Receiver<Result<Vec<DebouncedEvent>, Vec<notify::Error>>>;
 type Dbcr = Debouncer<RecommendedWatcher>;
 
+/// Specific implementation of [`Watcher`] trait.
+///
+/// It blocks waiting for the change to appear on the filesystem. Changes to files can be ignored
+/// by setting [`Config::ignored_paths`] and passing such [`Config`] object to
+/// [`FsChangeWatcher::make`] fn.
+///
+/// Initially, it watches for changes in directory pointed by `repo_root` passed as an argument to
+/// [`FsChangeWatcher::make`] fn. See [`FsChangeWatcher::wait_for_change`] for details.
 pub struct FsChangeWatcher {
     rx: RefCell<Rx>,
     watcher: RefCell<Dbcr>,
@@ -72,6 +80,15 @@ fn setup_watcher<P: AsRef<Path>>(path: P) -> Result<(Rx, Dbcr), WatcherErr> {
 }
 
 impl Watcher for FsChangeWatcher {
+    /// Each call to this fn blocks. You need to pass a [`RepoRoot`] to that function to inform
+    /// it what directory to watch for changes.
+    ///
+    /// If the passed root is different than the one passed when creating
+    /// `FsChangeWatcher`, then the filesystem watcher is reattached.
+    ///
+    /// Not every file change breaks the waiting loop. Some files can be ignored by setting
+    /// [`Config::ignored_paths`] in a configuration passed as a second argument to
+    /// [`FsChangeWatcher::make`].
     #[instrument(level = "trace", skip(self))]
     fn wait_for_change(&self, passed_root: RepoRoot) -> Result<(), WatcherErr> {
         if *self.repo_root.borrow() != passed_root {
