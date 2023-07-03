@@ -10,6 +10,9 @@ use tracing::{debug, error, instrument};
 const COVERAGE: usize = 1;
 static COVERAGE_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"(\d+.\d{2})% coverage").unwrap());
 
+/// It runs the command for a coverage stage. Command is passed in via `Config::coverage_cmd`.
+///
+/// The execution can fail in three ways. See the [`DefaultCoverageRunner::run`] for details.
 #[derive(Debug)]
 pub struct DefaultCoverageRunner {
     cfg: Config,
@@ -22,6 +25,15 @@ impl DefaultCoverageRunner {
 }
 
 impl CovRunner for DefaultCoverageRunner {
+    /// It executes `coverage_cmd` on a path specified by `repo_root` and parses the output
+    /// to read the code coverage.
+    ///
+    /// It can fail in a few ways:
+    /// - there was an error while running the command (for example no binary in PATH)
+    /// - the command was executed, but there was an issue with the code
+    ///   (for example the test failed)
+    /// - the command executed properly, but there is an error with interpreting the command ouput
+    ///   (for example the output format was changed)
     #[instrument(skip(self))]
     fn run(&self, repo_root: RepoRoot) -> Result<CoverageRunStatus, CoverageErr> {
         let repo_root = repo_root.to_string();
