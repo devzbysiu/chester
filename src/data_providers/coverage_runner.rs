@@ -20,6 +20,7 @@ impl DefaultCoverageRunner {
 }
 
 impl CovRunner for DefaultCoverageRunner {
+    // TODO: Update docs
     /// It executes `coverage_cmd` on a path specified by `repo_root` and parses the output
     /// to read the code coverage.
     ///
