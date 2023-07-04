@@ -62,8 +62,9 @@ impl TIndex for DefaultTestsIndex {
 mod test {
     use super::*;
 
-    use crate::configuration::config::{Cmd, ConfigBuilder};
+    use crate::configuration::config::ConfigBuilder;
     use crate::configuration::tracing::init_tracing;
+    use crate::data_providers::command::Cmd;
     use crate::testingtools::state::{noop, working_with, StateValues};
 
     use anyhow::Result;

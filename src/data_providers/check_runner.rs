@@ -26,7 +26,7 @@ impl CRunner for DefaultCheckRunner {
     /// The execution can fail in two ways:
     /// - there is an error while executing `check_cmd` command
     /// - the command succeeds, but there are issues with the code
-    /// (`check_cmd` exits with non-zero status code).
+    ///   (`check_cmd` exits with non-zero status code).
     fn run(&self, repo_root: RepoRoot) -> Result<CheckRunStatus, CheckErr> {
         debug!("running check in {repo_root}");
         let Ok(status) = self.cfg.check_cmd.status(&repo_root) else {
@@ -48,8 +48,9 @@ impl CRunner for DefaultCheckRunner {
 mod test {
     use super::*;
 
-    use crate::configuration::config::{Cmd, ConfigBuilder};
+    use crate::configuration::config::ConfigBuilder;
     use crate::configuration::tracing::init_tracing;
+    use crate::data_providers::command::Cmd;
 
     use anyhow::Result;
     use cmd_lib::run_cmd;

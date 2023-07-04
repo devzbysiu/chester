@@ -1,9 +1,8 @@
+use crate::data_providers::command::Cmd;
 use crate::entities::ignored_path::IgnoredPath;
-use crate::result::{CfgErr, CmdErr};
+use crate::result::{CfgErr, CoverageParseErr};
 
 use derive_builder::Builder;
-use std::path::Path;
-use std::process::{Command, ExitStatus, Stdio};
 
 pub fn cfg() -> Result<Config, CfgErr> {
     Ok(ConfigBuilder::default()
@@ -27,7 +26,7 @@ fn check_cmd() -> Cmd {
     Cmd::new("cargo", &["check"])
 }
 
-fn coverage_cmd() -> Cmd {
+fn coverage_cmd() -> Cmd<f32, CoverageParseErr> {
     Cmd::new(
         "cargo",
         &[
@@ -46,37 +45,7 @@ pub struct Config {
     pub tests_cmd: Cmd,
     pub list_tests_cmd: Cmd,
     pub check_cmd: Cmd,
-    pub coverage_cmd: Cmd,
-}
-
-#[derive(Debug, Default, Clone)]
-pub struct Cmd {
-    tool: String,
-    args: Vec<String>,
-}
-
-impl Cmd {
-    pub fn new<S: Into<String>>(tool: S, args: &[&str]) -> Self {
-        let tool = tool.into();
-        let args = args.iter().map(ToString::to_string).collect();
-        Self { tool, args }
-    }
-
-    pub fn stdout<P: AsRef<Path>>(&self, working_dir: P) -> Result<String, CmdErr> {
-        let output = Command::new(&self.tool)
-            .args(&self.args)
-            .current_dir(working_dir)
-            .output()?;
-        Ok(String::from_utf8_lossy(&output.stdout).to_string())
-    }
-
-    pub fn status<P: AsRef<Path>>(&self, working_dir: P) -> Result<ExitStatus, CmdErr> {
-        Ok(Command::new(&self.tool)
-            .args(&self.args)
-            .current_dir(working_dir)
-            .stderr(Stdio::null()) // TODO: Move it to separate log file?
-            .status()?)
-    }
+    pub coverage_cmd: Cmd<f32, CoverageParseErr>,
 }
 
 #[cfg(test)]

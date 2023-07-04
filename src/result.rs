@@ -70,9 +70,6 @@ pub enum CoverageErr {
 
     #[error("Error when writing to state.")]
     Write(#[from] StateWriterErr),
-
-    #[error("Invalid coverage value.")]
-    InvalidValue(String),
 }
 
 #[derive(Debug, Error)]
@@ -148,6 +145,19 @@ pub enum CfgErr {
 
     #[error("Failed to configure ignored paths.")]
     IgnoredPath(#[from] IgnoredPathErr),
+}
+
+#[derive(Debug, Error, Clone, Default)]
+pub enum CoverageParseErr {
+    #[error("Failed to get last line of the output.")]
+    #[default]
+    NoLastLine,
+
+    #[error("Received output does not contain code coverage info.")]
+    InvalidOutput,
+
+    #[error("Invalid coverage value.")]
+    InvalidValue(String),
 }
 
 #[cfg(test)]

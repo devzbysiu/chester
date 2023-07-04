@@ -2,6 +2,7 @@ pub mod bus;
 pub mod change_watcher;
 pub mod check_runner;
 pub mod coverage_runner;
+pub mod output_parser;
 pub mod services;
 pub mod state;
 pub mod test_runner;

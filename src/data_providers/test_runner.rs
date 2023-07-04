@@ -39,8 +39,9 @@ impl TRunner for DefaultTestRunner {
 mod test {
     use super::*;
 
-    use crate::configuration::config::{Cmd, ConfigBuilder};
+    use crate::configuration::config::ConfigBuilder;
     use crate::configuration::tracing::init_tracing;
+    use crate::data_providers::command::Cmd;
 
     use anyhow::Result;
     use cmd_lib::run_cmd;
