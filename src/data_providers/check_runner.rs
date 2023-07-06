@@ -20,13 +20,13 @@ impl DefaultCheckRunner {
 }
 
 impl CRunner for DefaultCheckRunner {
-    #[instrument(skip(self))]
     /// Executes the `check_cmd` on the path specified by `repo_root`.
     ///
     /// The execution can fail in two ways:
     /// - there is an error while executing `check_cmd` command
     /// - the command succeeds, but there are issues with the code
     ///   (`check_cmd` exits with non-zero status code).
+    #[instrument(skip(self))]
     fn run(&self, repo_root: RepoRoot) -> Result<CheckRunStatus, CheckErr> {
         debug!("running check in {repo_root}");
         let Ok(status) = self.cfg.check_cmd.status(&repo_root) else {

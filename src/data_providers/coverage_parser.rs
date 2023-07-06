@@ -6,7 +6,7 @@ use regex::Regex;
 use tracing::{error, instrument};
 
 const COVERAGE: usize = 1;
-static COVERAGE_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"(\d+.\d{2})% coverage").unwrap());
+static COVERAGE_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"^(\d+.\d{2})% coverage").unwrap());
 
 pub struct CoverageParser;
 
@@ -43,172 +43,187 @@ impl OutputParser for CoverageParser {
     }
 }
 
-// TODO: Update tests
 #[cfg(test)]
 mod test {
-    use crate::configuration::config::ConfigBuilder;
+    use super::*;
+
     use crate::configuration::tracing::init_tracing;
-    use crate::data_providers::command::Cmd;
 
     use anyhow::Result;
 
     #[test]
-    #[ignore]
-    fn when_there_is_no_output_it_returns_failure_status() -> Result<()> {
+    fn when_output_does_not_contain_last_line_it_return_error() {
         init_tracing();
         // given
-        let _cfg = ConfigBuilder::default()
-            .coverage_cmd(Cmd::new("true", &[]))
-            .build()?;
-        // let cov_runner = DefaultCoverageRunner::make(cfg);
-        // let repo_root = RepoRoot::new("/tmp");
+        let cov_parser = CoverageParser;
+        let coverage_output = String::new();
 
-        // // when
-        // let res = cov_runner.run(repo_root)?;
+        // when
+        let res = cov_parser.parse(coverage_output);
 
-        // // then
-        // assert_eq!(res, CoverageRunStatus::Failure);
+        // then
+        assert!(matches!(res, Err(CoverageParseErr::NoLastLine)));
+    }
+
+    #[test]
+    fn when_output_does_not_contain_coverage_percentage_it_returns_error() {
+        init_tracing();
+        // given
+        let cov_parser = CoverageParser;
+        let coverage_output = "\nno coverage data".to_string();
+
+        // when
+        let res = cov_parser.parse(coverage_output);
+
+        // then
+        assert!(matches!(res, Err(CoverageParseErr::InvalidOutput)));
+    }
+
+    #[test]
+    fn with_correct_percentage_output_it_returns_percentage_value() -> Result<()> {
+        init_tracing();
+        // given
+        let cov_parser = CoverageParser;
+        let coverage_output = "\n25.05% coverage".to_string();
+
+        // when
+        let res = cov_parser.parse(coverage_output)?;
+
+        // then
+        assert!((res - 25.05).abs() < f32::EPSILON);
 
         Ok(())
     }
 
     #[test]
-    #[ignore]
-    fn when_output_does_not_contain_coverage_percentage_it_returns_failure_status() -> Result<()> {
-        // given
-        init_tracing();
-        let _cfg = ConfigBuilder::default()
-            .coverage_cmd(Cmd::new("echo", &["some line"]))
-            .build()?;
-        // let cov_runner = DefaultCoverageRunner::make(cfg);
-        // let repo_root = RepoRoot::new("/tmp");
-
-        // // when
-        // let res = cov_runner.run(repo_root)?;
-
-        // // then
-        // assert_eq!(res, CoverageRunStatus::Failure);
-
-        Ok(())
-    }
-
-    #[test]
-    #[ignore]
-    fn with_correct_percentage_output_it_returns_sucess_along_with_percentage() -> Result<()> {
-        // given
-        init_tracing();
-        let _cfg = ConfigBuilder::default()
-            .coverage_cmd(Cmd::new("echo", &["10.11% coverage"]))
-            .build()?;
-        // let cov_runner = DefaultCoverageRunner::make(cfg);
-        // let repo_root = RepoRoot::new("/tmp");
-
-        // // when
-        // let res = cov_runner.run(repo_root)?;
-
-        // // then
-        // assert_eq!(res, CoverageRunStatus::Success(10.11));
-
-        Ok(())
-    }
-
-    #[test]
-    #[ignore]
     fn it_works_with_single_digit_percentage() -> Result<()> {
-        // given
         init_tracing();
-        let _cfg = ConfigBuilder::default()
-            .coverage_cmd(Cmd::new("echo", &["1.11% coverage"]))
-            .build()?;
-        // let cov_runner = DefaultCoverageRunner::make(cfg);
-        // let repo_root = RepoRoot::new("/tmp");
+        // given
+        let cov_parser = CoverageParser;
+        let coverage_output = "\n5.01% coverage".to_string();
 
-        // // when
-        // let res = cov_runner.run(repo_root)?;
+        // when
+        let res = cov_parser.parse(coverage_output)?;
 
-        // // then
-        // assert_eq!(res, CoverageRunStatus::Success(1.11));
+        // then
+        assert!((res - 5.01).abs() < f32::EPSILON);
 
         Ok(())
     }
 
     #[test]
-    #[ignore]
     fn it_works_when_decimal_digits_are_0() -> Result<()> {
-        // given
         init_tracing();
-        let _cfg = ConfigBuilder::default()
-            .coverage_cmd(Cmd::new("echo", &["1.00% coverage"]))
-            .build()?;
-        // let cov_runner = DefaultCoverageRunner::make(cfg);
-        // let repo_root = RepoRoot::new("/tmp");
+        // given
+        let cov_parser = CoverageParser;
+        let coverage_output = "\n5.00% coverage".to_string();
 
-        // // when
-        // let res = cov_runner.run(repo_root)?;
+        // when
+        let res = cov_parser.parse(coverage_output)?;
 
-        // // then
-        // assert_eq!(res, CoverageRunStatus::Success(1.00));
+        // then
+        assert!((res - 5.0).abs() < f32::EPSILON);
 
         Ok(())
     }
 
     #[test]
-    #[ignore]
     fn it_works_with_hundred_percents() -> Result<()> {
-        // given
         init_tracing();
-        let _cfg = ConfigBuilder::default()
-            .coverage_cmd(Cmd::new("echo", &["100.00% coverage"]))
-            .build()?;
-        // let cov_runner = DefaultCoverageRunner::make(cfg);
-        // let repo_root = RepoRoot::new("/tmp");
+        // given
+        let cov_parser = CoverageParser;
+        let coverage_output = "\n100.00% coverage".to_string();
 
-        // // when
-        // let res = cov_runner.run(repo_root)?;
+        // when
+        let res = cov_parser.parse(coverage_output)?;
 
-        // // then
-        // assert_eq!(res, CoverageRunStatus::Success(100.00));
+        // then
+        assert!((res - 100.0).abs() < f32::EPSILON);
 
         Ok(())
     }
 
     #[test]
-    #[ignore]
-    fn it_fails_with_three_digits_after_decimal_point() -> Result<()> {
-        // given
+    fn it_fails_with_three_digits_after_decimal_point() {
         init_tracing();
-        let _cfg = ConfigBuilder::default()
-            .coverage_cmd(Cmd::new("echo", &["1.001% coverage"]))
-            .build()?;
-        // let cov_runner = DefaultCoverageRunner::make(cfg);
-        // let repo_root = RepoRoot::new("/tmp");
+        // given
+        let cov_parser = CoverageParser;
+        let coverage_output = "\n50.007% coverage".to_string();
 
-        // // when
-        // let res = cov_runner.run(repo_root)?;
+        // when
+        let res = cov_parser.parse(coverage_output);
 
-        // // then
-        // assert_eq!(res, CoverageRunStatus::Failure);
-
-        Ok(())
+        // then
+        assert!(matches!(res, Err(CoverageParseErr::InvalidOutput)));
     }
 
     #[test]
-    #[ignore]
-    fn it_fails_with_more_then_hundred_percent() -> Result<()> {
-        // given
+    fn it_fails_with_more_then_hundred_percent() {
         init_tracing();
-        let _cfg = ConfigBuilder::default()
-            .coverage_cmd(Cmd::new("echo", &["101.01% coverage"]))
-            .build()?;
-        // let cov_runner = DefaultCoverageRunner::make(cfg);
-        // let repo_root = RepoRoot::new("/tmp");
+        // given
+        let cov_parser = CoverageParser;
+        let coverage_output = "\n100.01% coverage".to_string();
 
-        // // when
-        // let res = cov_runner.run(repo_root);
+        // when
+        let res = cov_parser.parse(coverage_output);
 
-        // // then
-        // assert!(matches!(res, Err(CoverageErr::InvalidValue(_))));
+        // then
+        assert!(matches!(res, Err(CoverageParseErr::InvalidValue(_))));
+    }
 
-        Ok(())
+    #[test]
+    fn it_fails_with_less_than_zero_value() {
+        init_tracing();
+        // given
+        let cov_parser = CoverageParser;
+        let coverage_output = "\n-0.01% coverage".to_string();
+
+        // when
+        let res = cov_parser.parse(coverage_output);
+
+        // then
+        assert!(matches!(res, Err(CoverageParseErr::InvalidOutput)));
+    }
+
+    #[test]
+    fn it_fails_when_there_is_no_decimal_point() {
+        init_tracing();
+        // given
+        let cov_parser = CoverageParser;
+        let coverage_output = "\n50% coverage".to_string();
+
+        // when
+        let res = cov_parser.parse(coverage_output);
+
+        // then
+        assert!(matches!(res, Err(CoverageParseErr::InvalidOutput)));
+    }
+
+    #[test]
+    fn it_fails_when_there_is_no_coverage_word() {
+        init_tracing();
+        // given
+        let cov_parser = CoverageParser;
+        let coverage_output = "\n50.05% value".to_string();
+
+        // when
+        let res = cov_parser.parse(coverage_output);
+
+        // then
+        assert!(matches!(res, Err(CoverageParseErr::InvalidOutput)));
+    }
+
+    #[test]
+    fn it_fails_when_there_is_single_decimal_point() {
+        init_tracing();
+        // given
+        let cov_parser = CoverageParser;
+        let coverage_output = "\n50.5% coverage".to_string();
+
+        // when
+        let res = cov_parser.parse(coverage_output);
+
+        // then
+        assert!(matches!(res, Err(CoverageParseErr::InvalidOutput)));
     }
 }
