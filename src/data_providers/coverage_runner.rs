@@ -62,12 +62,12 @@ mod test {
     use crate::configuration::config::ConfigBuilder;
     use crate::configuration::tracing::init_tracing;
     use crate::data_providers::command::Cmd;
+    use crate::testingtools::output_parser::{failing, working};
 
     use anyhow::Result;
 
-    // TODO: Update tests
     #[test]
-    fn when_cmd_fails_it_returns_failure_status() -> Result<()> {
+    fn it_fails_with_invalid_cmd() -> Result<()> {
         // given
         init_tracing();
         let cfg = ConfigBuilder::default()
@@ -81,6 +81,63 @@ mod test {
 
         // then
         assert_eq!(res, CoverageRunStatus::Failure);
+
+        Ok(())
+    }
+
+    #[test]
+    fn it_fails_when_coverage_cmd_does_not_have_parser() -> Result<()> {
+        // given
+        init_tracing();
+        let cfg = ConfigBuilder::default()
+            .coverage_cmd(Cmd::new("ls", &[]))
+            .build()?;
+        let cov_runner = DefaultCoverageRunner::make(cfg);
+        let repo_root = RepoRoot::new("/tmp");
+
+        // when
+        let res = cov_runner.run(repo_root)?;
+
+        // then
+        assert_eq!(res, CoverageRunStatus::Failure);
+
+        Ok(())
+    }
+
+    #[test]
+    fn it_fails_when_parser_fails() -> Result<()> {
+        // given
+        init_tracing();
+        let cfg = ConfigBuilder::default()
+            .coverage_cmd(Cmd::with_parser("ls", &[], failing()))
+            .build()?;
+        let cov_runner = DefaultCoverageRunner::make(cfg);
+        let repo_root = RepoRoot::new("/tmp");
+
+        // when
+        let res = cov_runner.run(repo_root)?;
+
+        // then
+        assert_eq!(res, CoverageRunStatus::Failure);
+
+        Ok(())
+    }
+
+    #[test]
+    fn it_returns_coverage_value_when_parser_succeeds() -> Result<()> {
+        // given
+        init_tracing();
+        let cfg = ConfigBuilder::default()
+            .coverage_cmd(Cmd::with_parser("ls", &[], working(60.0)))
+            .build()?;
+        let cov_runner = DefaultCoverageRunner::make(cfg);
+        let repo_root = RepoRoot::new("/tmp");
+
+        // when
+        let res = cov_runner.run(repo_root)?;
+
+        // then
+        assert_eq!(res, CoverageRunStatus::Success(60.0));
 
         Ok(())
     }

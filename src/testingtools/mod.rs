@@ -5,6 +5,7 @@ use tracing::error;
 
 pub mod check_runner;
 pub mod coverage_runner;
+pub mod output_parser;
 pub mod state;
 pub mod test_runner;
 pub mod tests_index;
