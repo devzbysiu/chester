@@ -9,7 +9,6 @@ use crate::use_cases::state::State;
 #[allow(unused)]
 pub fn setup_shells(rt: Runtime) -> State {
     let Runtime {
-        cfg: _,
         bus,
         change_watcher,
         tests_index,

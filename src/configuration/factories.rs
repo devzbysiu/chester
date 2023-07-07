@@ -19,7 +19,6 @@ use crate::use_cases::tests_index::TestsIndex;
 use std::sync::Arc;
 
 pub struct Runtime {
-    pub cfg: Config,
     pub bus: EventBus,
     pub change_watcher: ChangeWatcher,
     pub tests_index: TestsIndex,
@@ -34,7 +33,6 @@ impl Runtime {
         let bus = event_bus()?;
         let state = state(bus.publisher());
         Ok(Self {
-            cfg: cfg.clone(),
             bus,
             change_watcher: change_watcher(state.reader().repo_root()?, cfg.clone())?,
             tests_index: tests_index(cfg.clone(), state.reader()),
