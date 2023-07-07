@@ -2,6 +2,7 @@ use crate::data_providers::command::Cmd;
 use crate::data_providers::coverage_parser::CoverageParser;
 use crate::entities::ignored_path::IgnoredPath;
 use crate::result::{CfgErr, CoverageParseErr};
+use crate::use_cases::output_parser::Parser;
 
 use derive_builder::Builder;
 
@@ -36,8 +37,12 @@ fn coverage_cmd() -> Cmd<f32, CoverageParseErr> {
             "--target-dir",
             "./tarpaulin-target",
         ],
-        CoverageParser::make(),
+        coverage_parser(),
     )
+}
+
+fn coverage_parser() -> Parser<f32, CoverageParseErr> {
+    CoverageParser::make()
 }
 
 #[derive(Debug, Default, Clone, Builder)]
