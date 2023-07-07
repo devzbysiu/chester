@@ -23,7 +23,6 @@ impl<T, E> Cmd<T, E> {
         }
     }
 
-    #[allow(unused)] // TODO: Remove this
     pub fn with_parser<S: Into<String>>(tool: S, args: &[&str], parser: Parser<T, E>) -> Self {
         let tool = tool.into();
         let args = args.iter().map(ToString::to_string).collect();

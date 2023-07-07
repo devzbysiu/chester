@@ -1,5 +1,7 @@
+use std::sync::{Arc, Mutex};
+
 use crate::result::CoverageParseErr;
-use crate::use_cases::output_parser::OutputParser;
+use crate::use_cases::output_parser::{OutputParser, Parser};
 
 use once_cell::sync::Lazy;
 use regex::Regex;
@@ -9,6 +11,12 @@ const COVERAGE: usize = 1;
 static COVERAGE_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"^(\d+.\d{2})% coverage").unwrap());
 
 pub struct CoverageParser;
+
+impl CoverageParser {
+    pub fn make() -> Parser<f32, CoverageParseErr> {
+        Arc::new(Mutex::new(Self))
+    }
+}
 
 impl OutputParser for CoverageParser {
     type Output = f32;

@@ -1,4 +1,5 @@
 use crate::data_providers::command::Cmd;
+use crate::data_providers::coverage_parser::CoverageParser;
 use crate::entities::ignored_path::IgnoredPath;
 use crate::result::{CfgErr, CoverageParseErr};
 
@@ -27,7 +28,7 @@ fn check_cmd() -> Cmd {
 }
 
 fn coverage_cmd() -> Cmd<f32, CoverageParseErr> {
-    Cmd::new(
+    Cmd::with_parser(
         "cargo",
         &[
             "tarpaulin",
@@ -35,6 +36,7 @@ fn coverage_cmd() -> Cmd<f32, CoverageParseErr> {
             "--target-dir",
             "./tarpaulin-target",
         ],
+        CoverageParser::make(),
     )
 }
 
