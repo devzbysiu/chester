@@ -7,7 +7,7 @@ use tracing::{debug, error, instrument};
 
 /// It runs the command for a coverage stage. Command is passed in via `Config::coverage_cmd`.
 ///
-/// The execution can fail in three ways. See the [`DefaultCoverageRunner::run`] for details.
+/// The execution can fail. See the [`DefaultCoverageRunner::run`] for details.
 #[derive(Debug)]
 pub struct DefaultCoverageRunner {
     cfg: Config,
@@ -20,16 +20,13 @@ impl DefaultCoverageRunner {
 }
 
 impl CovRunner for DefaultCoverageRunner {
-    // TODO: Update docs
     /// It executes `coverage_cmd` on a path specified by `repo_root` and parses the output
-    /// to read the code coverage.
+    /// to read the code coverage by using output parser from `coverage_cmd`.
     ///
     /// It can fail in a few ways:
     /// - there was an error while running the command (for example no binary in PATH)
-    /// - the command was executed, but there was an issue with the code
-    ///   (for example the test failed)
-    /// - the command executed properly, but there is an error with interpreting the command ouput
-    ///   (for example the output format was changed)
+    /// - there is no parser in the `coverage_cmd` (parser is required in this case)
+    /// - the parser failed to parse the output produced by the `coverage_cmd`
     #[instrument(skip(self))]
     fn run(&self, repo_root: RepoRoot) -> Result<CoverageRunStatus, CoverageErr> {
         let repo_root = repo_root.to_string();

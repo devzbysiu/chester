@@ -10,6 +10,9 @@ use tracing::{error, instrument};
 const COVERAGE: usize = 1;
 static COVERAGE_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"^(\d+.\d{2})% coverage").unwrap());
 
+/// Parses the output of the code coverage command.
+///
+/// It can fail. See [`CoverageParser::parse`] for details.
 pub struct CoverageParser;
 
 impl CoverageParser {
@@ -22,6 +25,13 @@ impl OutputParser for CoverageParser {
     type Output = f32;
     type Error = CoverageParseErr;
 
+    /// Parses the string output and returns f32 value of code coverage.
+    ///
+    /// It can fail in few ways:
+    /// - there was no last line in the output (line containing code coverage info)
+    /// - output contains last line, but the format is incorrect
+    /// - the format contains coverage information, but it's value is incorrect (eg.: more than
+    ///   100%)
     #[instrument(skip(self))]
     fn parse(&self, output: String) -> Result<Self::Output, Self::Error> {
         let Some(last_line) = output.lines().last() else {
